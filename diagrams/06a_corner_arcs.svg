@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="280mm" height="280mm" viewBox="0 0 280 280">
+<rect width="280" height="280" fill="white"/>
+<path d="M 53.915,99.584 L 50.766,59.708 A 9.0000 9.0000 0 0 1 59.7385 50.0000 L 99.739,50.000" stroke="blue" fill="none" stroke-width="0.400"/>
+<line x1="47.000" y1="50.000" x2="53.000" y2="50.000" stroke="red" stroke-width="0.8"/>
+<line x1="50.000" y1="47.000" x2="50.000" y2="53.000" stroke="red" stroke-width="0.8"/>
+<text x="55.000" y="45.000" font-size="12" font-family="monospace" fill="black">TL (85.5°)</text>
+<path d="M 91.683,50.000 L 131.683,50.000 A 9.0000 9.0000 0 0 1 140.6546 58.2917 L 143.803,98.168" stroke="blue" fill="none" stroke-width="0.400"/>
+<line x1="137.000" y1="50.000" x2="143.000" y2="50.000" stroke="red" stroke-width="0.8"/>
+<line x1="140.000" y1="47.000" x2="140.000" y2="53.000" stroke="red" stroke-width="0.8"/>
+<text x="145.000" y="45.000" font-size="12" font-family="monospace" fill="black">TR (94.5°)</text>
+<path d="M 98.317,140.000 L 58.317,140.000 A 9.0000 9.0000 0 0 1 49.3454 131.7083 L 46.197,91.832" stroke="blue" fill="none" stroke-width="0.400"/>
+<line x1="47.000" y1="140.000" x2="53.000" y2="140.000" stroke="red" stroke-width="0.8"/>
+<line x1="50.000" y1="137.000" x2="50.000" y2="143.000" stroke="red" stroke-width="0.8"/>
+<text x="55.000" y="135.000" font-size="12" font-family="monospace" fill="black">BL (94.5°)</text>
+<path d="M 136.085,90.416 L 139.234,130.292 A 9.0000 9.0000 0 0 1 130.2615 140.0000 L 90.261,140.000" stroke="blue" fill="none" stroke-width="0.400"/>
+<line x1="137.000" y1="140.000" x2="143.000" y2="140.000" stroke="red" stroke-width="0.8"/>
+<line x1="140.000" y1="137.000" x2="140.000" y2="143.000" stroke="red" stroke-width="0.8"/>
+<text x="145.000" y="135.000" font-size="12" font-family="monospace" fill="black">BR (85.5°)</text>
+</svg>

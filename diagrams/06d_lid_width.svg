@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="450.000mm" height="210.000mm" viewBox="0 0 450.000 210.000">
+<rect width="450.000" height="210.000" fill="white"/>
+<rect x="45.000" y="45.000" width="9.000" height="120.000" fill="#cccccc" stroke="black" stroke-width="0.5"/>
+<rect x="396.000" y="45.000" width="9.000" height="120.000" fill="#cccccc" stroke="black" stroke-width="0.5"/>
+<rect x="54.000" y="60.000" width="9.300" height="9.000" fill="white" stroke="blue" stroke-width="0.5"/>
+<rect x="386.700" y="60.000" width="9.300" height="9.000" fill="white" stroke="blue" stroke-width="0.5"/>
+<rect x="63.300" y="60.000" width="323.400" height="9.000" fill="#90ee90" stroke="darkgreen" stroke-width="0.5"/>
+<text x="225.000" y="120.000" font-size="10.500" font-family="monospace" fill="darkgreen" text-anchor="middle">lid width = 107.8mm</text>
+<text x="225.000" y="144.000" font-size="9.000" font-family="monospace" fill="black" text-anchor="middle">short_outer=120.0mm  T=3.0mm  groove_depth=3.1mm  lid = short_inner - 2*(T+tol) = 107.8mm</text>
+</svg>
