@@ -9,29 +9,9 @@ No dependencies beyond stdlib. Run with: python3 01_trapezoid_geometry.py
 import math
 import sys
 
-FLOAT_TOLERANCE = 1e-6
-passed = 0
-failed = 0
+from check_harness import CheckHarness
 
-
-def check(label, actual, expected, tol=1e-4):
-    global passed, failed
-    if abs(actual - expected) <= tol:
-        print(f"  PASS  {label}: {actual:.6f}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}: got {actual:.6f}, expected {expected:.6f}  (delta={abs(actual-expected):.6f})")
-        failed += 1
-
-
-def check_true(label, condition, detail=""):
-    global passed, failed
-    if condition:
-        print(f"  PASS  {label}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}  {detail}")
-        failed += 1
+h = CheckHarness()
 
 
 # ── Shared geometry derivation (mirrors spec Section 6) ──────────────────────
@@ -101,43 +81,43 @@ print("\n── Test 1: Mode A — reference dulcimer preset ──")
 g = derive_mode_a(long_outer=180, short_outer=120, length_outer=380,
                   depth_outer=90, thickness=3.0)
 
-check("leg_inset",           g["leg_inset"],           30.0)
-check("leg_length",          g["leg_length"],           381.1824, tol=1e-3)
-check("leg_angle_deg",       g["leg_angle_deg"],          4.5140, tol=1e-3)
-check("long_end_angle_deg",  g["long_end_angle_deg"],    94.5140, tol=1e-3)
-check("short_end_angle_deg", g["short_end_angle_deg"],   85.4860, tol=1e-3)
-check("long_inner",          g["long_inner"],            174.0)
-check("short_inner",         g["short_inner"],           114.0)
-check("length_inner",        g["length_inner"],          374.0)
-check("depth_inner",         g["depth_inner"],            84.0)
-check("air_volume",          g["air_volume"],          4523904.0, tol=1.0)
+h.check("leg_inset",           g["leg_inset"],           30.0)
+h.check("leg_length",          g["leg_length"],           381.1824, tol=1e-3)
+h.check("leg_angle_deg",       g["leg_angle_deg"],          4.5140, tol=1e-3)
+h.check("long_end_angle_deg",  g["long_end_angle_deg"],    94.5140, tol=1e-3)
+h.check("short_end_angle_deg", g["short_end_angle_deg"],   85.4860, tol=1e-3)
+h.check("long_inner",          g["long_inner"],            174.0)
+h.check("short_inner",         g["short_inner"],           114.0)
+h.check("length_inner",        g["length_inner"],          374.0)
+h.check("depth_inner",         g["depth_inner"],            84.0)
+h.check("air_volume",          g["air_volume"],          4523904.0, tol=1.0)
 
 # ── Test 2: Mode B round-trip ─────────────────────────────────────────────────
 print("\n── Test 2: Mode B — leg=381.1824 should recover length≈380 ──")
 g2 = derive_mode_b(long_outer=180, short_outer=120,
                    leg_length=381.1824, depth_outer=90, thickness=3.0)
-check("length_outer recovered", g2["length_outer"], 380.0, tol=0.01)
-check("leg_angle_deg",          g2["leg_angle_deg"], g["leg_angle_deg"], tol=1e-3)
+h.check("length_outer recovered", g2["length_outer"], 380.0, tol=0.01)
+h.check("leg_angle_deg",          g2["leg_angle_deg"], g["leg_angle_deg"], tol=1e-3)
 
 # ── Test 3: DimMode.INNER ─────────────────────────────────────────────────────
 print("\n── Test 3: DimMode.INNER — inner dims become outer ──")
 g3 = derive_mode_a(long_outer=174, short_outer=114, length_outer=374,
                    depth_outer=84, thickness=3.0, dim_mode_inner=True)
-check("long_outer after INNER",   g3["long_outer"],   180.0)
-check("short_outer after INNER",  g3["short_outer"],  120.0)
-check("length_outer after INNER", g3["length_outer"], 380.0)
-check("depth_outer after INNER",  g3["depth_outer"],   90.0)
+h.check("long_outer after INNER",   g3["long_outer"],   180.0)
+h.check("short_outer after INNER",  g3["short_outer"],  120.0)
+h.check("length_outer after INNER", g3["length_outer"], 380.0)
+h.check("depth_outer after INNER",  g3["depth_outer"],   90.0)
 # Angles and derived values should match mode A reference
-check("leg_angle_deg same",       g3["leg_angle_deg"], g["leg_angle_deg"], tol=1e-3)
+h.check("leg_angle_deg same",       g3["leg_angle_deg"], g["leg_angle_deg"], tol=1e-3)
 
 # ── Test 4: Mode B + DimMode.INNER — leg NOT adjusted ────────────────────────
 print("\n── Test 4: Mode B + DimMode.INNER — leg is diagonal, not adjusted ──")
 g4 = derive_mode_b(long_outer=174, short_outer=114,
                    leg_length=381.1824,   # passed as outer diagonal, not adjusted
                    depth_outer=84, thickness=3.0, dim_mode_inner=True)
-check("long_outer",  g4["long_outer"],  180.0)
-check("short_outer", g4["short_outer"], 120.0)
-check("leg_angle recovered", g4["leg_angle_deg"], g["leg_angle_deg"], tol=1e-3)
+h.check("long_outer",  g4["long_outer"],  180.0)
+h.check("short_outer", g4["short_outer"], 120.0)
+h.check("leg_angle recovered", g4["leg_angle_deg"], g["leg_angle_deg"], tol=1e-3)
 
 # ── Test 5: Degenerate / boundary validation ──────────────────────────────────
 print("\n── Test 5: Boundary conditions ──")
@@ -145,37 +125,36 @@ print("\n── Test 5: Boundary conditions ──")
 # leg <= leg_inset must raise
 try:
     derive_mode_b(180, 120, leg_length=25.0, depth_outer=90, thickness=3.0)
-    check_true("leg<=leg_inset raises ValueError", False, "no exception raised")
+    h.check_true("leg<=leg_inset raises ValueError", False, "no exception raised")
 except ValueError:
-    check_true("leg<=leg_inset raises ValueError", True)
+    h.check_true("leg<=leg_inset raises ValueError", True)
 
 # long must be > short
 try:
     g5 = derive_mode_a(100, 120, 380, 90, 3.0)  # short > long
-    check_true("long > short: leg_inset negative", g5["leg_inset"] < 0,
+    h.check_true("long > short: leg_inset negative", g5["leg_inset"] < 0,
                f"leg_inset={g5['leg_inset']}")
     # Note: the spec requires validation (long > short > 0) at validate_config level,
     # not in derive(). derive() will produce a negative leg_inset which is geometrically
     # meaningless. The validation layer catches it before derive() is called.
     print("  NOTE  long <= short: derive() returns negative leg_inset — validation layer must catch this")
 except Exception as e:
-    check_true("long > short handled", False, str(e))
+    h.check_true("long > short handled", False, str(e))
 
 # ── Test 6: Symmetry — isosceles trapezoid ────────────────────────────────────
 print("\n── Test 6: Symmetry — square box (long=short) becomes rectangle ──")
 g6 = derive_mode_a(100, 100, 200, 50, 3.0)
-check("square: leg_inset=0",     g6["leg_inset"],     0.0)
-check("square: leg_angle=0",     g6["leg_angle_deg"], 0.0)
-check("square: long_end=90",     g6["long_end_angle_deg"],  90.0)
-check("square: short_end=90",    g6["short_end_angle_deg"], 90.0)
-check("square: leg=length",      g6["leg_length"],    200.0)
+h.check("square: leg_inset=0",     g6["leg_inset"],     0.0)
+h.check("square: leg_angle=0",     g6["leg_angle_deg"], 0.0)
+h.check("square: long_end=90",     g6["long_end_angle_deg"],  90.0)
+h.check("square: short_end=90",    g6["short_end_angle_deg"], 90.0)
+h.check("square: leg=length",      g6["leg_length"],    200.0)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-print(f"\n{'='*60}")
-print(f"Results: {passed} passed, {failed} failed")
-if failed == 0:
+h.summary()
+if h.failed == 0:
     print("ALL PASS — trapezoid geometry derivation is correct.")
 else:
     print("FAILURES DETECTED — review formulas before proceeding.")
-sys.exit(0 if failed == 0 else 1)
+h.exit()

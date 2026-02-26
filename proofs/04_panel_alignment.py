@@ -13,52 +13,12 @@ No dependencies beyond stdlib. Run with: python3 04_panel_alignment.py
 import math
 import sys
 
-passed = 0
-failed = 0
+from check_harness import CheckHarness
+from geometry_utils import tang, finger_count_and_width, finger_positions
+
+h = CheckHarness()
 FLOAT_TOL = 1e-4
 JOINT_TOL = 0.1   # assembly tolerance from spec
-
-
-def check(label, actual, expected, tol=FLOAT_TOL):
-    global passed, failed
-    if abs(actual - expected) <= tol:
-        print(f"  PASS  {label}: {actual:.6f}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}: got {actual:.6f}, expected {expected:.6f}")
-        failed += 1
-
-
-def check_true(label, condition, detail=""):
-    global passed, failed
-    if condition:
-        print(f"  PASS  {label}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}  {detail}")
-        failed += 1
-
-
-# ── Geometry helpers ──────────────────────────────────────────────────────────
-
-def finger_count_and_width(available, nominal):
-    n = round(available / nominal)
-    if n % 2 == 0: n -= 1
-    n = max(3, n)
-    return n, available / n
-
-
-def tang(angle_deg, R):
-    return R / math.tan(math.radians(angle_deg / 2))
-
-
-def finger_positions(term_start_global, count, fw):
-    """
-    Global positions of each finger (tab or slot) along the edge.
-    Returns list of (start, end, is_tab). First finger is a TAB.
-    """
-    return [(term_start_global + i*fw, term_start_global + (i+1)*fw, i % 2 == 0)
-            for i in range(count)]
 
 
 # ── Reference dimensions ──────────────────────────────────────────────────────
@@ -147,7 +107,7 @@ for i, (base_s, base_e, base_is_tab) in enumerate(base_long_fingers):
         misalignments += 1
         print(f"  FAIL  finger {i}: both {'tabs' if base_is_tab else 'slots'} — should alternate")
 
-check_true(f"WALL_LONG ↔ BASE long: all {n_long} fingers aligned",
+h.check_true(f"WALL_LONG ↔ BASE long: all {n_long} fingers aligned",
            misalignments == 0, f"{misalignments} misalignments")
 
 
@@ -167,7 +127,7 @@ for i, (base_s, base_e, base_is_tab) in enumerate(base_short_fingers):
     if base_is_tab == wall_is_tab:
         misalignments += 1
 
-check_true(f"WALL_SHORT ↔ BASE short: all {n_short} fingers aligned",
+h.check_true(f"WALL_SHORT ↔ BASE short: all {n_short} fingers aligned",
            misalignments == 0)
 
 
@@ -185,7 +145,7 @@ for i, (base_s, base_e, _) in enumerate(base_leg_fingers):
     if max(abs(base_s-wall_s), abs(base_e-wall_e)) > FLOAT_TOL:
         misalignments += 1
 
-check_true(f"WALL_LEG ↔ BASE leg: all {n_leg} fingers aligned", misalignments == 0)
+h.check_true(f"WALL_LEG ↔ BASE leg: all {n_leg} fingers aligned", misalignments == 0)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -201,7 +161,7 @@ pos_error = tang_short - tang_90  # 0.7385mm — every finger is shifted by this
 print(f"  Without BASE-as-master:")
 print(f"    WALL_LONG finger zone starts {pos_error:.4f}mm off from BASE")
 print(f"    Assembly tolerance is {JOINT_TOL}mm")
-check_true("independent offset exceeds assembly tolerance",
+h.check_true("independent offset exceeds assembly tolerance",
            pos_error > JOINT_TOL,
            f"offset={pos_error:.4f}mm > tolerance={JOINT_TOL}mm — joint would not fit")
 print(f"    (Interference = {pos_error - JOINT_TOL/2:.4f}mm — would require filing to assemble)")
@@ -214,10 +174,10 @@ print("\n── Test 5: Wall-to-wall joints (all 90° — should be perfect) ─
 avail_depth = depth_o - 2 * tang_90
 n_depth, fw_depth = finger_count_and_width(avail_depth, fw_nominal)
 print(f"  Depth edges: avail={avail_depth:.3f}mm, n={n_depth}, fw={fw_depth:.4f}mm")
-check_true("n_depth is odd", n_depth % 2 == 1)
-check_true("n_depth >= 3",   n_depth >= 3, f"n={n_depth}")
+h.check_true("n_depth is odd", n_depth % 2 == 1)
+h.check_true("n_depth >= 3",   n_depth >= 3, f"n={n_depth}")
 # Same terms from both sides → zero offset
-check("depth edge offset", 0.0, 0.0)   # trivially correct, documenting the case
+h.check("depth edge offset", 0.0, 0.0)   # trivially correct, documenting the case
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -228,10 +188,10 @@ burn = 0.05
 tab_w  = fw_long - 2*burn        # narrowed by burn
 slot_w = fw_long + 2*burn + JOINT_TOL  # widened by burn + tolerance
 
-check_true("tab width < slot width (fits)", tab_w < slot_w,
+h.check_true("tab width < slot width (fits)", tab_w < slot_w,
            f"tab={tab_w:.4f}, slot={slot_w:.4f}")
 clearance = slot_w - tab_w
-check_true("clearance > 0", clearance > 0)
+h.check_true("clearance > 0", clearance > 0)
 print(f"  Clearance per side: {clearance/2:.4f}mm")
 
 # The spatial offset (from BASE-as-master: wall term_start may differ from BASE by
@@ -240,16 +200,15 @@ print(f"  Clearance per side: {clearance/2:.4f}mm")
 # that sits outside the finger zone. The fingers themselves are aligned.
 plain_line_gap_wall = tang_short - tang_90  # 0.739mm gap on WALL_LONG before fingers start
 print(f"\n  Plain-line gap on WALL_LONG before finger zone: {plain_line_gap_wall:.4f}mm (acceptable)")
-check_true("plain-line gap does not interfere with fingers",
+h.check_true("plain-line gap does not interfere with fingers",
            plain_line_gap_wall >= 0,
            "negative gap would mean arc overlaps finger zone")
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-print(f"\n{'='*60}")
-print(f"Results: {passed} passed, {failed} failed")
-if failed == 0:
+h.summary()
+if h.failed == 0:
     print("ALL PASS — panel alignment is correct with BASE-as-master rule.")
 else:
     print("FAILURES DETECTED — review panel alignment before proceeding.")
-sys.exit(0 if failed == 0 else 1)
+h.exit()

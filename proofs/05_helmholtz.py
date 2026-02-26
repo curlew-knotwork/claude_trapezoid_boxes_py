@@ -9,28 +9,9 @@ No dependencies beyond stdlib. Run with: python3 05_helmholtz.py
 import math
 import sys
 
-passed = 0
-failed = 0
+from check_harness import CheckHarness
 
-
-def check(label, actual, expected, tol=1e-4):
-    global passed, failed
-    if abs(actual - expected) <= tol:
-        print(f"  PASS  {label}: {actual:.6f}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}: got {actual:.6f}, expected {expected:.6f}  (delta={abs(actual-expected):.8f})")
-        failed += 1
-
-
-def check_true(label, condition, detail=""):
-    global passed, failed
-    if condition:
-        print(f"  PASS  {label}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}  {detail}")
-        failed += 1
+h = CheckHarness()
 
 
 # ── Core Helmholtz functions (mirrors spec Section 14) ───────────────────────
@@ -88,21 +69,21 @@ ACCEPTANCE_PCT = 5.0   # spec: achieved frequency must be within 5% of target
 # ══════════════════════════════════════════════════════════════════════════════
 print("\n── Test 1: Air volume — reference preset ──")
 V = air_volume_trapezoid(long_i, short_i, length_i, depth_i)
-check("air volume", V, 4_523_904.0, tol=1.0)
+h.check("air volume", V, 4_523_904.0, tol=1.0)
 
 
 print("\n── Test 2: Solver convergence and round-trip accuracy ──")
 target_hz = 110.0
 D, iters = solve_diameter(target_hz, V, T_top)
 print(f"  Converged in {iters} iterations, D={D:.4f}mm")
-check_true("converges in < 30 iterations", iters < 30, f"iters={iters}")
+h.check_true("converges in < 30 iterations", iters < 30, f"iters={iters}")
 
 # Round-trip: compute frequency back from solved diameter
 f_back = helmholtz_freq(V, D, T_top)
-check("round-trip frequency", f_back, target_hz, tol=1e-4)
+h.check("round-trip frequency", f_back, target_hz, tol=1e-4)
 
 # Acceptance criterion: within 5%
-check_true("within 5% acceptance band",
+h.check_true("within 5% acceptance band",
            abs(f_back - target_hz) / target_hz * 100 < ACCEPTANCE_PCT)
 
 
@@ -111,13 +92,13 @@ print("\n── Test 3: Frequency sensitivity to volume ──")
 D_same = D
 f_larger_V = helmholtz_freq(V * 1.1, D_same, T_top)
 f_smaller_V = helmholtz_freq(V * 0.9, D_same, T_top)
-check_true("larger V → lower frequency",  f_larger_V  < target_hz,
+h.check_true("larger V → lower frequency",  f_larger_V  < target_hz,
            f"f={f_larger_V:.2f}Hz")
-check_true("smaller V → higher frequency", f_smaller_V > target_hz,
+h.check_true("smaller V → higher frequency", f_smaller_V > target_hz,
            f"f={f_smaller_V:.2f}Hz")
 # Exact: f ∝ 1/sqrt(V), so f * sqrt(V) = const
 ratio = f_larger_V * math.sqrt(V * 1.1) / (target_hz * math.sqrt(V))
-check("f * sqrt(V) is constant (1.1x volume)", ratio, 1.0, tol=1e-3)
+h.check("f * sqrt(V) is constant (1.1x volume)", ratio, 1.0, tol=1e-3)
 
 
 print("\n── Test 4: Neck slot volume correction ──")
@@ -126,22 +107,22 @@ neck_w = 42.0;  neck_d = 15.0
 # Full through-body: tenon = full interior length
 V_neck_full = neck_slot_volume_correction(neck_w, neck_d, length_i)
 V_corrected  = V - V_neck_full
-check("full-through displaced volume", V_neck_full, 235_620.0, tol=1.0)
-check("corrected volume", V_corrected, V - 235_620.0, tol=1.0)
+h.check("full-through displaced volume", V_neck_full, 235_620.0, tol=1.0)
+h.check("corrected volume", V_corrected, V - 235_620.0, tol=1.0)
 displacement_pct = V_neck_full / V * 100
 print(f"  Displaced volume: {displacement_pct:.1f}% of total V")
-check_true("displacement > 4% (significant)", displacement_pct > 4.0)
+h.check_true("displacement > 4% (significant)", displacement_pct > 4.0)
 
 # Without correction: frequency is too high
 f_uncorrected = helmholtz_freq(V_corrected, D, T_top)
 f_error_pct   = (f_uncorrected - target_hz) / target_hz * 100
 print(f"  Without correction: f={f_uncorrected:.2f}Hz, error={f_error_pct:.1f}%")
-check_true("without correction: exceeds 2% error", abs(f_error_pct) > 2.0)
+h.check_true("without correction: exceeds 2% error", abs(f_error_pct) > 2.0)
 
 # With correction: solve for new diameter using corrected volume
 D_corrected, iters_c = solve_diameter(target_hz, V_corrected, T_top)
 f_verify = helmholtz_freq(V_corrected, D_corrected, T_top)
-check("corrected diameter round-trip", f_verify, target_hz, tol=1e-4)
+h.check("corrected diameter round-trip", f_verify, target_hz, tol=1e-4)
 print(f"  Corrected: D={D_corrected:.3f}mm (was {D:.3f}mm), f={f_verify:.2f}Hz")
 
 # Partial neck (one end, 80mm tenon) — should be ignorable
@@ -149,7 +130,7 @@ V_neck_partial = neck_slot_volume_correction(neck_w, neck_d, 80.0)
 f_partial = helmholtz_freq(V - V_neck_partial, D, T_top)
 f_partial_error = abs(f_partial - target_hz)
 print(f"  Partial (80mm tenon): f={f_partial:.2f}Hz, error={f_partial_error:.3f}Hz")
-check_true("partial neck shift < 1Hz (ignorable)", f_partial_error < 1.0,
+h.check_true("partial neck shift < 1Hz (ignorable)", f_partial_error < 1.0,
            f"shift={f_partial_error:.3f}Hz")
 
 
@@ -159,29 +140,29 @@ D_big   = D * 1.5
 D_small = D * 0.5
 f_big   = helmholtz_freq(V, D_big,   T_top)
 f_small = helmholtz_freq(V, D_small, T_top)
-check_true("bigger hole → higher frequency",  f_big   > target_hz)
-check_true("smaller hole → lower frequency",  f_small < target_hz)
+h.check_true("bigger hole → higher frequency",  f_big   > target_hz)
+h.check_true("smaller hole → lower frequency",  f_small < target_hz)
 
 # Thicker soundboard (longer L_eff) → lower frequency
 f_thick_top = helmholtz_freq(V, D, T_top * 2)
-check_true("thicker top → lower frequency", f_thick_top < target_hz)
+h.check_true("thicker top → lower frequency", f_thick_top < target_hz)
 
 
 print("\n── Test 6: Default target and range validation ──")
 # Default 110Hz is spec-stated default for small-to-medium instrument bodies
-check("default target 110Hz as stated", 110.0, 110.0)
+h.check("default target 110Hz as stated", 110.0, 110.0)
 
 # Practical range: hole diameter should be between 5mm and body short_inner/2
 D_min_practical = 5.0
 D_max_practical = short_i / 2   # 57mm
-check_true("solved D > 5mm (not too small)", D > D_min_practical,
+h.check_true("solved D > 5mm (not too small)", D > D_min_practical,
            f"D={D:.2f}mm")
-check_true("solved D < short_inner/2 (fits soundboard)", D < D_max_practical,
+h.check_true("solved D < short_inner/2 (fits soundboard)", D < D_max_practical,
            f"D={D:.2f}mm < {D_max_practical}mm")
 
 # Target frequency range: must be positive and < Nyquist for audio
-check_true("target Hz > 0", target_hz > 0)
-check_true("target Hz < 20000", target_hz < 20000)
+h.check_true("target Hz > 0", target_hz > 0)
+h.check_true("target Hz < 20000", target_hz < 20000)
 
 
 print("\n── Test 7: Triskele sound hole — equivalent diameter ──")
@@ -192,21 +173,20 @@ print("\n── Test 7: Triskele sound hole — equivalent diameter ──")
 D_triskele_lobe = 22.0   # example lobe diameter
 A_triskele = 3 * math.pi * (D_triskele_lobe/2)**2
 D_equivalent = 2 * math.sqrt(A_triskele / math.pi)
-check("triskele equivalent diameter", D_equivalent,
+h.check("triskele equivalent diameter", D_equivalent,
       D_triskele_lobe * math.sqrt(3), tol=1e-4)
 # Frequency using equivalent area and average L_eff
 # (spec uses D_equivalent as the diameter for L_eff computation — simple approximation)
 f_triskele = helmholtz_freq(V, D_equivalent, T_top)
 print(f"  Triskele (3x D={D_triskele_lobe}mm lobes): equiv D={D_equivalent:.3f}mm, f={f_triskele:.2f}Hz")
-check_true("triskele frequency is positive and reasonable",
+h.check_true("triskele frequency is positive and reasonable",
            10 < f_triskele < 1000)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-print(f"\n{'='*60}")
-print(f"Results: {passed} passed, {failed} failed")
-if failed == 0:
+h.summary()
+if h.failed == 0:
     print("ALL PASS — Helmholtz solver is correct.")
 else:
     print("FAILURES DETECTED — review Helmholtz formulas before proceeding.")
-sys.exit(0 if failed == 0 else 1)
+h.exit()

@@ -10,28 +10,9 @@ No dependencies beyond stdlib. Run with: python3 03_finger_joints.py
 import math
 import sys
 
-passed = 0
-failed = 0
+from check_harness import CheckHarness
 
-
-def check(label, actual, expected, tol=1e-4):
-    global passed, failed
-    if abs(actual - expected) <= tol:
-        print(f"  PASS  {label}: {actual:.6f}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}: got {actual:.6f}, expected {expected:.6f}  (delta={abs(actual-expected):.8f})")
-        failed += 1
-
-
-def check_true(label, condition, detail=""):
-    global passed, failed
-    if condition:
-        print(f"  PASS  {label}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}  {detail}")
-        failed += 1
+h = CheckHarness()
 
 
 # ── Core finger joint functions (mirrors spec Section 10) ────────────────────
@@ -120,37 +101,37 @@ tang_short = R / math.tan(math.radians(short_end_angle/2))  # 9.7385
 tang_90    = R                                               # 9.0000
 
 print("\n── Test 1: Auto finger width ──")
-check("auto fw = 3*T", fw, 9.0)
+h.check("auto fw = 3*T", fw, 9.0)
 
 print("\n── Test 2: Non-orthogonal joint corrections ──")
 D_eff  = effective_depth(T, leg_angle)
 W_over = rotational_overcut(T, leg_angle)
-check("D_eff  = T/cos(4.514°)", D_eff,  3.0093, tol=1e-3)
-check("W_over = T*tan(4.514°)", W_over, 0.2368, tol=1e-3)
+h.check("D_eff  = T/cos(4.514°)", D_eff,  3.0093, tol=1e-3)
+h.check("W_over = T*tan(4.514°)", W_over, 0.2368, tol=1e-3)
 
 # Verify D_eff * cos(alpha) = T (round-trip)
-check("D_eff * cos(alpha) = T", D_eff * math.cos(math.radians(leg_angle)), T)
+h.check("D_eff * cos(alpha) = T", D_eff * math.cos(math.radians(leg_angle)), T)
 
 # Verify W_over physical meaning: this is the lateral collision distance
 # during assembly rotation. Confirm: tan(alpha) = opposite/adjacent = W_over/T
-check("W_over/T = tan(alpha)", W_over/T, math.tan(math.radians(leg_angle)))
+h.check("W_over/T = tan(alpha)", W_over/T, math.tan(math.radians(leg_angle)))
 
 print("\n── Test 3: Structural safety check ──")
 ok, W_struct, W_over_c, alpha_max = structural_check(T, tol, leg_angle, fw)
-check("W_struct (dulcimer preset)", W_struct, 8.6632, tol=1e-3)
-check_true("W_struct >= T/2", ok, f"W_struct={W_struct:.4f}, min={T/2}")
+h.check("W_struct (dulcimer preset)", W_struct, 8.6632, tol=1e-3)
+h.check_true("W_struct >= T/2", ok, f"W_struct={W_struct:.4f}, min={T/2}")
 
 # Verify alpha_max formula
-check("alpha_max for defaults", alpha_max,
+h.check("alpha_max for defaults", alpha_max,
       math.degrees(math.atan((fw - tol - T*OVERCUT_MIN_STRUCT_RATIO) / T)), tol=1e-3)
 
 # At exactly alpha_max, W_struct should equal exactly T/2
 W_struct_at_max = structural_width(fw, tol, rotational_overcut(T, alpha_max))
-check("W_struct at alpha_max == T/2", W_struct_at_max, T * OVERCUT_MIN_STRUCT_RATIO)
+h.check("W_struct at alpha_max == T/2", W_struct_at_max, T * OVERCUT_MIN_STRUCT_RATIO)
 
 # Steeper angle should fail
 ok_steep, W_struct_steep, _, _ = structural_check(T, tol, alpha_max + 1.0, fw)
-check_true("angle > alpha_max fails structural check", not ok_steep,
+h.check_true("angle > alpha_max fails structural check", not ok_steep,
            f"W_struct={W_struct_steep:.4f}")
 
 print("\n── Test 4: Finger count and width — BASE edges ──")
@@ -168,19 +149,19 @@ print(f"  long  edge: avail={avail_long:.3f}mm, n={n_long},  fw={fw_long:.4f}mm"
 print(f"  short edge: avail={avail_short:.3f}mm, n={n_short}, fw={fw_short:.4f}mm")
 print(f"  leg   edge: avail={avail_leg:.3f}mm, n={n_leg},  fw={fw_leg:.4f}mm")
 
-check("n_long  = 17", n_long,  17)
-check("n_short = 11", n_short, 11)
-check("n_leg   = 39", n_leg,   39)
+h.check("n_long  = 17", n_long,  17)
+h.check("n_short = 11", n_short, 11)
+h.check("n_leg   = 39", n_leg,   39)
 
 # Counts are all odd
-check_true("n_long  is odd", n_long  % 2 == 1)
-check_true("n_short is odd", n_short % 2 == 1)
-check_true("n_leg   is odd", n_leg   % 2 == 1)
+h.check_true("n_long  is odd", n_long  % 2 == 1)
+h.check_true("n_short is odd", n_short % 2 == 1)
+h.check_true("n_leg   is odd", n_leg   % 2 == 1)
 
 # Total joint length = available length (no gaps)
-check("long  n*fw = avail",  n_long  * fw_long,  avail_long)
-check("short n*fw = avail",  n_short * fw_short, avail_short)
-check("leg   n*fw = avail",  n_leg   * fw_leg,   avail_leg)
+h.check("long  n*fw = avail",  n_long  * fw_long,  avail_long)
+h.check("short n*fw = avail",  n_short * fw_short, avail_short)
+h.check("leg   n*fw = avail",  n_leg   * fw_leg,   avail_leg)
 
 print("\n── Test 5: Wall panels inherit BASE finger geometry (BASE-as-master) ──")
 # Wall panel available lengths use tang_90 from their own 90° corners
@@ -199,21 +180,21 @@ n_wall_long_independent,  _ = finger_count_and_width(avail_wall_long,  fw)
 n_wall_short_independent, _ = finger_count_and_width(avail_wall_short, fw)
 
 # For long/short: independent calculation gives SAME count but different fw
-check("WALL_LONG independent count same as BASE",  n_wall_long_independent,  n_long)
-check("WALL_SHORT independent count same as BASE", n_wall_short_independent, n_short)
+h.check("WALL_LONG independent count same as BASE",  n_wall_long_independent,  n_long)
+h.check("WALL_SHORT independent count same as BASE", n_wall_short_independent, n_short)
 
 # But the spatial offset between start-of-finger-zone is significant for long/short:
 offset_long  = abs(tang_short - tang_90)  # 0.739mm
 offset_short = abs(tang_long  - tang_90)  # 0.683mm
-check_true("WALL_LONG spatial offset > tolerance (requires inheritance)",
+h.check_true("WALL_LONG spatial offset > tolerance (requires inheritance)",
            offset_long > tol,
            f"offset={offset_long:.3f}mm > tol={tol}mm")
-check_true("WALL_SHORT spatial offset > tolerance (requires inheritance)",
+h.check_true("WALL_SHORT spatial offset > tolerance (requires inheritance)",
            offset_short > tol,
            f"offset={offset_short:.3f}mm > tol={tol}mm")
 # WALL_LEG is fine independently (delta < tol)
 delta_leg = abs(avail_wall_leg - avail_leg)
-check_true("WALL_LEG delta within tolerance",
+h.check_true("WALL_LEG delta within tolerance",
            delta_leg < tol,
            f"delta={delta_leg:.4f}mm")
 
@@ -224,22 +205,22 @@ burn = 0.05  # mm, half kerf
 tab_after_burn  = fw - 2 * burn
 slot_after_burn = fw + 2 * burn
 clearance = slot_after_burn - tab_after_burn
-check("tab after burn = fw - 2*burn",  tab_after_burn,  fw - 2*burn)
-check("slot after burn = fw + 2*burn", slot_after_burn, fw + 2*burn)
-check("clearance = 4*burn",            clearance,       4*burn)
+h.check("tab after burn = fw - 2*burn",  tab_after_burn,  fw - 2*burn)
+h.check("slot after burn = fw + 2*burn", slot_after_burn, fw + 2*burn)
+h.check("clearance = 4*burn",            clearance,       4*burn)
 # With tolerance applied: effective clearance includes tolerance on top of burn
 effective_clearance = clearance + 2*tol  # tolerance on each side of slot
-check("effective clearance = 4*burn + 2*tol", effective_clearance, 4*burn + 2*tol)
+h.check("effective clearance = 4*burn + 2*tol", effective_clearance, 4*burn + 2*tol)
 
 print("\n── Test 7: Sliding lid width ──")
 # Correct formula from spec: short_inner - 2*(thickness+tolerance)
 # = (short_outer - 2T) - 2*(T+tol) = short_outer - 4T - 2*tol
 lid_w = (short_o - 2*T) - 2*(T + tol)
-check("sliding lid width = short_inner - 2*(T+tol)", lid_w, 107.8)
+h.check("sliding lid width = short_inner - 2*(T+tol)", lid_w, 107.8)
 
 # The WRONG formula from an earlier version of the spec:
 lid_w_wrong = short_o + 2*(T + tol)
-check_true("wrong formula (short_outer + 2*(T+tol)) gives wider lid",
+h.check_true("wrong formula (short_outer + 2*(T+tol)) gives wider lid",
            lid_w_wrong > short_o,
            f"wrong={lid_w_wrong:.1f}mm, correct={lid_w:.1f}mm")
 print(f"  NOTE  Wrong formula gives {lid_w_wrong:.1f}mm, correct is {lid_w:.1f}mm — would not fit")
@@ -248,20 +229,19 @@ print("\n── Test 8: Groove angle limit for sliding lid ──")
 # Groove width = T + tol. Lid edge effective width at angle = T/cos(alpha).
 # Fits if T/cos(alpha) <= T + tol → cos(alpha) >= T/(T+tol)
 crit_angle = math.degrees(math.acos(T / (T + tol)))
-check("critical groove angle", crit_angle, 14.593, tol=0.01)
+h.check("critical groove angle", crit_angle, 14.593, tol=0.01)
 # Dulcimer angle is safe
-check_true("dulcimer angle < critical", leg_angle < crit_angle,
+h.check_true("dulcimer angle < critical", leg_angle < crit_angle,
            f"{leg_angle:.3f}° < {crit_angle:.3f}°")
 # At exactly critical angle, lid just fits
 T_eff_at_crit = T / math.cos(math.radians(crit_angle))
-check("T_eff at critical angle = T+tol", T_eff_at_crit, T + tol)
+h.check("T_eff at critical angle = T+tol", T_eff_at_crit, T + tol)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-print(f"\n{'='*60}")
-print(f"Results: {passed} passed, {failed} failed")
-if failed == 0:
+h.summary()
+if h.failed == 0:
     print("ALL PASS — finger joint geometry is correct.")
 else:
     print("FAILURES DETECTED — review finger joint formulas before proceeding.")
-sys.exit(0 if failed == 0 else 1)
+h.exit()

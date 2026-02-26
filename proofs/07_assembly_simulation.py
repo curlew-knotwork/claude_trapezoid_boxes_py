@@ -14,56 +14,13 @@ No dependencies beyond stdlib. Run with: python3 07_assembly_simulation.py
 import math
 import sys
 
-passed = 0
-failed = 0
-warnings = []
+from check_harness import CheckHarness
+from geometry_utils import tang, finger_count_and_width, finger_positions
+
+h = CheckHarness()
 
 ASSEMBLY_TOL = 0.1   # mm — joint assembly tolerance from spec
 FLOAT_TOL    = 1e-6
-
-
-def check(label, actual, expected, tol=1e-4):
-    global passed, failed
-    if abs(actual - expected) <= tol:
-        print(f"  PASS  {label}: {actual:.6f}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}: got {actual:.6f}, expected {expected:.6f}  (delta={abs(actual-expected):.8f})")
-        failed += 1
-
-
-def check_true(label, condition, detail=""):
-    global passed, failed
-    if condition:
-        print(f"  PASS  {label}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}  {detail}")
-        failed += 1
-
-
-def warn(msg):
-    warnings.append(msg)
-    print(f"  WARN  {msg}")
-
-
-# ── Geometry primitives ───────────────────────────────────────────────────────
-
-def tang(angle_deg, R):
-    return R / math.tan(math.radians(angle_deg / 2))
-
-
-def finger_count_and_width(available, nominal):
-    n = round(available / nominal)
-    if n % 2 == 0: n -= 1
-    n = max(3, n)
-    return n, available / n
-
-
-def finger_positions(term_start, count, fw):
-    """List of (start, end, is_tab) for each finger along an edge."""
-    return [(term_start + i*fw, term_start + (i+1)*fw, i%2==0)
-            for i in range(count)]
 
 
 def check_mating_alignment(label, fingers_a, fingers_b, tol=ASSEMBLY_TOL):
@@ -73,10 +30,9 @@ def check_mating_alignment(label, fingers_a, fingers_b, tol=ASSEMBLY_TOL):
     - Opposite polarity (tab↔slot)
     Returns (ok, max_offset)
     """
-    global passed, failed
     if len(fingers_a) != len(fingers_b):
         print(f"  FAIL  {label}: count mismatch {len(fingers_a)} vs {len(fingers_b)}")
-        failed += 1
+        h.failed += 1
         return False, float('inf')
     max_offset = 0.0
     ok = True
@@ -85,13 +41,13 @@ def check_mating_alignment(label, fingers_a, fingers_b, tol=ASSEMBLY_TOL):
         max_offset = max(max_offset, offset)
         if offset > tol:
             print(f"  FAIL  {label} finger {i}: offset={offset:.4f}mm > tol={tol}mm")
-            ok = False; failed += 1
+            ok = False; h.failed += 1
         if tab_a == tab_b:
             print(f"  FAIL  {label} finger {i}: both {'tabs' if tab_a else 'slots'}")
-            ok = False; failed += 1
+            ok = False; h.failed += 1
     if ok:
         print(f"  PASS  {label}: {len(fingers_a)} fingers, max_offset={max_offset:.6f}mm")
-        passed += 1
+        h.passed += 1
     return ok, max_offset
 
 
@@ -142,23 +98,23 @@ print("  PHASE 1: INDIVIDUAL GEOMETRY CHECKS")
 print("═══════════════════════════════════════════")
 
 print("\n── 1.1 Trapezoid derivation ──")
-check("leg_inset",          leg_inset,        30.0)
-check("leg_len",            leg_len,          381.182, tol=1e-2)
-check("long_end_angle",     long_end_angle,    94.514, tol=1e-2)
-check("short_end_angle",    short_end_angle,   85.486, tol=1e-2)
+h.check("leg_inset",          leg_inset,        30.0)
+h.check("leg_len",            leg_len,          381.182, tol=1e-2)
+h.check("long_end_angle",     long_end_angle,    94.514, tol=1e-2)
+h.check("short_end_angle",    short_end_angle,   85.486, tol=1e-2)
 
 print("\n── 1.2 Corner arc tangent distances ──")
-check("tang long-end",   tang_long,   8.317,  tol=1e-2)
-check("tang short-end",  tang_short,  9.739,  tol=1e-2)
-check("tang 90°",        tang_90,     9.000)
+h.check("tang long-end",   tang_long,   8.317,  tol=1e-2)
+h.check("tang short-end",  tang_short,  9.739,  tol=1e-2)
+h.check("tang 90°",        tang_90,     9.000)
 
 print("\n── 1.3 Non-orthogonal joint corrections ──")
 D_eff  = T / math.cos(math.radians(leg_angle))
 W_over = T * math.tan(math.radians(leg_angle))
-check("D_eff",   D_eff,   3.009,  tol=1e-2)
-check("W_over",  W_over,  0.237,  tol=1e-2)
+h.check("D_eff",   D_eff,   3.009,  tol=1e-2)
+h.check("W_over",  W_over,  0.237,  tol=1e-2)
 W_struct = fw - tol - W_over
-check_true("W_struct >= T/2", W_struct >= T/2,
+h.check_true("W_struct >= T/2", W_struct >= T/2,
            f"W_struct={W_struct:.3f}, min={T/2}")
 
 print("\n── 1.4 BASE finger zones ──")
@@ -170,28 +126,28 @@ n_long,  fw_long  = finger_count_and_width(avail_long,  fw)
 n_short, fw_short = finger_count_and_width(avail_short, fw)
 n_leg,   fw_leg   = finger_count_and_width(avail_leg,   fw)
 
-check("n_long  = 17",   n_long,  17)
-check("n_short = 11",   n_short, 11)
-check("n_leg   = 39",   n_leg,   39)
+h.check("n_long  = 17",   n_long,  17)
+h.check("n_short = 11",   n_short, 11)
+h.check("n_leg   = 39",   n_leg,   39)
 
 for name, n in [("n_long", n_long), ("n_short", n_short), ("n_leg", n_leg)]:
-    check_true(f"{name} is odd", n % 2 == 1)
+    h.check_true(f"{name} is odd", n % 2 == 1)
 
 print("\n── 1.5 Sliding lid width ──")
 lid_w = short_i - 2*(T + tol)
-check("lid_width", lid_w, 107.8)
-check_true("lid fits: lid_w < short_i", lid_w < short_i,
+h.check("lid_width", lid_w, 107.8)
+h.check_true("lid fits: lid_w < short_i", lid_w < short_i,
            f"lid={lid_w:.1f} < short_inner={short_i:.1f}")
 
 print("\n── 1.6 Groove angle limit ──")
 crit_angle = math.degrees(math.acos(T / (T + tol)))
-check_true("leg_angle < groove_angle_limit",
+h.check_true("leg_angle < groove_angle_limit",
            leg_angle < crit_angle,
            f"{leg_angle:.3f}° < {crit_angle:.3f}°")
 
 print("\n── 1.7 Helmholtz ──")
 V = 0.5 * (long_i + short_i) * length_i * depth_i
-check("air_volume", V, 4_523_904.0, tol=1.0)
+h.check("air_volume", V, 4_523_904.0, tol=1.0)
 C = 343_000.0
 f_target = 110.0
 T_top = T
@@ -203,7 +159,7 @@ for _ in range(50):
     if abs(D_new-D) < 1e-8: break
     D = D_new
 f_check = C/(2*math.pi) * math.sqrt(math.pi*(D/2)**2 / (V*(T_top+0.85*D)))
-check("Helmholtz round-trip", f_check, f_target, tol=1e-3)
+h.check("Helmholtz round-trip", f_check, f_target, tol=1e-3)
 
 # Neck slot volume correction (full through-body)
 neck_w, neck_d = 42.0, 15.0
@@ -216,7 +172,7 @@ for _ in range(50):
     if abs(D_new-D_corr) < 1e-8: break
     D_corr = D_new
 f_corr = C/(2*math.pi) * math.sqrt(math.pi*(D_corr/2)**2 / (V_corr*(T_top+0.85*D_corr)))
-check("Helmholtz with neck correction", f_corr, f_target, tol=1e-3)
+h.check("Helmholtz with neck correction", f_corr, f_target, tol=1e-3)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -241,7 +197,7 @@ check_mating_alignment("long_bottom ↔ WALL_LONG", base_long_fingers, wall_long
 
 # Verify gap between wall arc end and finger zone start
 gap_wall_long = tang_short - tang_90
-check_true("WALL_LONG plain-line gap >= 0 (no arc-finger overlap)",
+h.check_true("WALL_LONG plain-line gap >= 0 (no arc-finger overlap)",
            gap_wall_long >= 0, f"gap={gap_wall_long:.4f}mm")
 print(f"  (WALL_LONG has {gap_wall_long:.4f}mm plain-line gap before finger zone — correct)")
 
@@ -274,7 +230,7 @@ n_depth, fw_depth = finger_count_and_width(avail_depth, fw)
 wall_depth_a = finger_positions(tang_90, n_depth, fw_depth)
 wall_depth_b = [(s, e, not tab) for s, e, tab in finger_positions(tang_90, n_depth, fw_depth)]
 check_mating_alignment("depth edge ↔ depth edge", wall_depth_a, wall_depth_b)
-check_true("n_depth is odd", n_depth % 2 == 1)
+h.check_true("n_depth is odd", n_depth % 2 == 1)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -283,38 +239,38 @@ print("  PHASE 3: VALIDATION RULES")
 print("═══════════════════════════════════════════")
 
 print("\n── 3.1 Required geometry constraints ──")
-check_true("long > short",              long_o > short_o)
-check_true("short > 4*T",              short_o > 4*T,
+h.check_true("long > short",              long_o > short_o)
+h.check_true("short > 4*T",              short_o > 4*T,
            f"short={short_o} > 4*T={4*T}")
-check_true("depth > 4*T",              depth_o > 4*T)
-check_true("R <= short/4",             R <= short_o/4,
+h.check_true("depth > 4*T",              depth_o > 4*T)
+h.check_true("R <= short/4",             R <= short_o/4,
            f"R={R} <= short/4={short_o/4}")
-check_true("R <= depth/4",             R <= depth_o/4)
-check_true("T < short/4",             T < short_o/4)
-check_true("leg_angle < 45°",         leg_angle < 45.0)
+h.check_true("R <= depth/4",             R <= depth_o/4)
+h.check_true("T < short/4",             T < short_o/4)
+h.check_true("leg_angle < 45°",         leg_angle < 45.0)
 
 print("\n── 3.2 TEST_STRIP height constraint ──")
 strip_height = 3 * depth_o
-check_true("3*depth <= sheet_height",  strip_height <= 600,
+h.check_true("3*depth <= sheet_height",  strip_height <= 600,
            f"3*depth={strip_height}mm")
 
 print("\n── 3.3 neck_slot_both_ends + sliding_lid incompatibility ──")
 neck_slot_depth = 15.0
 groove_from_top = tang_90  # groove sits at ~9mm from top edge
-check_true("neck_slot_depth > groove_from_top (conflict exists when both enabled)",
+h.check_true("neck_slot_depth > groove_from_top (conflict exists when both enabled)",
            neck_slot_depth > groove_from_top,
            f"neck_d={neck_slot_depth} > groove_y={groove_from_top:.3f}")
 print(f"  (validate_config must reject this combination — confirmed geometry conflict)")
 
 print("\n── 3.4 Neck slot validation bounds ──")
 neck_slot_w = 42.0
-check_true("neck_slot_w < short_o - 4*T",
+h.check_true("neck_slot_w < short_o - 4*T",
            neck_slot_w < short_o - 4*T,
            f"{neck_slot_w} < {short_o-4*T}")
-check_true("neck_slot_depth < depth_o/2",
+h.check_true("neck_slot_depth < depth_o/2",
            neck_slot_depth < depth_o/2,
            f"{neck_slot_depth} < {depth_o/2}")
-check_true("neck_slot_w >= 20mm",
+h.check_true("neck_slot_w >= 20mm",
            neck_slot_w >= 20.0)
 
 
@@ -328,22 +284,22 @@ lo2, so2 = 100.0, 100.0
 li2 = (lo2-so2)/2
 ll2 = math.sqrt(200.0**2 + li2**2)
 la2 = math.degrees(math.atan2(li2, 200.0))
-check("square: leg_angle = 0", la2, 0.0)
-check("square: leg_len = length", ll2, 200.0)
+h.check("square: leg_angle = 0", la2, 0.0)
+h.check("square: leg_len = length", ll2, 200.0)
 D_eff_sq  = T / math.cos(math.radians(la2))
 W_over_sq = T * math.tan(math.radians(la2))
-check("square: D_eff = T (no correction)", D_eff_sq, T)
-check("square: W_over = 0 (no correction)", W_over_sq, 0.0)
+h.check("square: D_eff = T (no correction)", D_eff_sq, T)
+h.check("square: W_over = 0 (no correction)", W_over_sq, 0.0)
 
 print("\n── 4.2 Isosceles at steep-but-valid angle (leg_angle=10°) ──")
 la3 = 10.0
 D_eff_3  = T / math.cos(math.radians(la3))
 W_over_3 = T * math.tan(math.radians(la3))
 W_struct_3 = fw - tol - W_over_3
-check_true("steep: W_struct still > 0", W_struct_3 > 0,
+h.check_true("steep: W_struct still > 0", W_struct_3 > 0,
            f"W_struct={W_struct_3:.3f}")
 crit_angle = math.degrees(math.acos(T / (T + tol)))
-check_true("steep 10° < structural limit", la3 < crit_angle,
+h.check_true("steep 10° < structural limit", la3 < crit_angle,
            f"10° < {crit_angle:.2f}°")
 
 print("\n── 4.3 DimMode.INNER — leg NOT adjusted ──")
@@ -356,23 +312,17 @@ length_o2 = length_i2 + 2*T
 leg_inset_2 = (long_o2 - short_o2) / 2
 leg_from_inner = math.sqrt(length_o2**2 + leg_inset_2**2)
 leg_from_outer = math.sqrt(cfg.length_outer**2 + leg_inset**2)
-check("DimMode.INNER: leg_len same either way", leg_from_inner, leg_from_outer, tol=1e-4)
+h.check("DimMode.INNER: leg_len same either way", leg_from_inner, leg_from_outer, tol=1e-4)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-print(f"\n{'='*60}")
-print(f"Results: {passed} passed, {failed} failed, {len(warnings)} warnings")
+h.summary()
 
-if warnings:
-    print("\nWarnings:")
-    for w in warnings:
-        print(f"  {w}")
-
-if failed == 0:
+if h.failed == 0:
     print("\n✓ ALL PASS — geometry is consistent and assembly-ready.")
     print("  The spec is believed correct. Proceed to implementation.")
     print("  Remaining validation: physical cut and assembly.")
 else:
-    print(f"\n✗ {failed} FAILURES — resolve before implementing.")
+    print(f"\n✗ {h.failed} FAILURES — resolve before implementing.")
 
-sys.exit(0 if failed == 0 else 1)
+h.exit()

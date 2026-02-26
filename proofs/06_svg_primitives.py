@@ -3,7 +3,7 @@
 Generates small SVG files you can open in Inkscape or a browser to visually
 verify the geometry before writing any production code.
 
-Outputs (in same directory as this script):
+Outputs (in diagrams/ directory):
   06a_corner_arcs.svg      — all four BASE corners with arcs at 2x scale
   06b_finger_strip.svg     — one finger joint edge (BASE long_bottom)
   06c_full_base.svg        — complete BASE panel outline
@@ -20,6 +20,9 @@ No dependencies beyond stdlib. Run with: python3 06_svg_primitives.py
 
 import math
 import os
+
+from geometry_utils import tang, centre_offset, inward_bisector, corner_arc_start_end
+from geometry_utils import finger_count_and_width
 
 # ── SVG helpers ───────────────────────────────────────────────────────────────
 
@@ -55,22 +58,7 @@ def line(x1, y1, x2, y2, scale=3.0, stroke="grey", width=0.3):
             f'stroke-dasharray="{1.5*scale:.3f},{1.5*scale:.3f}"/>\n')
 
 
-# ── Geometry functions (identical to earlier scripts) ─────────────────────────
-
-def tang(angle_deg, R):
-    return R / math.tan(math.radians(angle_deg / 2))
-
-
-def centre_offset(angle_deg, R):
-    return R / math.sin(math.radians(angle_deg / 2))
-
-
-def inward_bisector(edge_a_dir, edge_b_dir):
-    bx = -edge_a_dir[0] + edge_b_dir[0]
-    by = -edge_a_dir[1] + edge_b_dir[1]
-    mag = math.sqrt(bx*bx + by*by)
-    return bx/mag, by/mag
-
+# ── Local alias for SVG arc path segment ──────────────────────────────────────
 
 def arc_path_segment(start, end, R, sweep=1):
     """SVG arc path: A rx ry x-rotation large-arc-flag sweep-flag x y"""
@@ -79,17 +67,8 @@ def arc_path_segment(start, end, R, sweep=1):
 
 
 def corner_arc_points(vertex, edge_a_dir, edge_b_dir, R, angle_deg):
-    td = tang(angle_deg, R)
-    arc_start = (vertex[0] - edge_a_dir[0]*td, vertex[1] - edge_a_dir[1]*td)
-    arc_end   = (vertex[0] + edge_b_dir[0]*td, vertex[1] + edge_b_dir[1]*td)
-    return arc_start, arc_end
-
-
-def finger_count_and_width(available, nominal):
-    n = round(available / nominal)
-    if n % 2 == 0: n -= 1
-    n = max(3, n)
-    return n, available / n
+    """Local alias for corner_arc_start_end from geometry_utils."""
+    return corner_arc_start_end(vertex, edge_a_dir, edge_b_dir, R, angle_deg)
 
 
 # ── Reference values ──────────────────────────────────────────────────────────
@@ -119,7 +98,8 @@ TR = (leg_inset+short_o, 0.0)
 BR = (long_o,         380.0)
 BL = (0.0,            380.0)
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
+diagrams_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'diagrams')
+diagrams_dir = os.path.realpath(diagrams_dir)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -187,7 +167,7 @@ grid = [
 for cx, cy, V, ea, eb, ang, lbl in grid:
     content += draw_corner(cx, cy, V, ea, eb, ang, lbl, scale=1)
 
-with open(os.path.join(script_dir, "06a_corner_arcs.svg"), "w") as f:
+with open(os.path.join(diagrams_dir, "06a_corner_arcs.svg"), "w") as f:
     f.write(f'<?xml version="1.0" encoding="UTF-8"?>\n'
             f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}mm" height="{H}mm" '
             f'viewBox="0 0 {W} {H}">\n'
@@ -244,7 +224,7 @@ strip_content = (
     + f'</text>\n'
     + f'</g>\n'
 )
-with open(os.path.join(script_dir, "06b_finger_strip.svg"), "w") as f:
+with open(os.path.join(diagrams_dir, "06b_finger_strip.svg"), "w") as f:
     f.write(f'<?xml version="1.0" encoding="UTF-8"?>\n'
             f'<svg xmlns="http://www.w3.org/2000/svg" '
             f'width="{SVG_W*SCALE_B:.3f}mm" height="{SVG_H*SCALE_B:.3f}mm" '
@@ -335,7 +315,7 @@ def build_base_outline():
     return d
 
 base_d = build_base_outline()
-with open(os.path.join(script_dir, "06c_full_base.svg"), "w") as f:
+with open(os.path.join(diagrams_dir, "06c_full_base.svg"), "w") as f:
     f.write(f'<?xml version="1.0" encoding="UTF-8"?>\n'
             f'<svg xmlns="http://www.w3.org/2000/svg" '
             f'width="{SVG_W_C*SCALE_C:.3f}mm" height="{SVG_H_C*SCALE_C:.3f}mm" '
@@ -410,7 +390,7 @@ svg_d += (f'<text x="{rx(short_o/2):.3f}" y="{ry(33):.3f}" '
           f'lid = short_inner - 2*(T+tol) = {lid_w:.1f}mm'
           f'</text>\n')
 
-with open(os.path.join(script_dir, "06d_lid_width.svg"), "w") as f:
+with open(os.path.join(diagrams_dir, "06d_lid_width.svg"), "w") as f:
     f.write(f'<?xml version="1.0" encoding="UTF-8"?>\n'
             f'<svg xmlns="http://www.w3.org/2000/svg" '
             f'width="{W_D*SCALE_D:.3f}mm" height="{H_D*SCALE_D+2*PAD_D*SCALE_D:.3f}mm" '
@@ -419,7 +399,7 @@ with open(os.path.join(script_dir, "06d_lid_width.svg"), "w") as f:
             + svg_d + '</svg>\n')
 print("  Written 06d_lid_width.svg")
 
-print(f"\nAll SVG files written to: {script_dir}")
+print(f"\nAll SVG files written to: {diagrams_dir}")
 print("\nOpen in Inkscape and verify:")
 print("  06a: arcs are smooth and tangent, red cross marks vertex, no gaps at arc-line joins")
 print("  06b: regular finger pattern, centred in available space")

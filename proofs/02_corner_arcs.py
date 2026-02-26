@@ -9,41 +9,11 @@ No dependencies beyond stdlib. Run with: python3 02_corner_arcs.py
 import math
 import sys
 
-passed = 0
-failed = 0
+from check_harness import CheckHarness
+from geometry_utils import tang, centre_offset, inward_bisector, corner_arc_start_end
+
+h = CheckHarness()
 FLOAT_TOL = 1e-4
-
-
-def check(label, actual, expected, tol=FLOAT_TOL):
-    global passed, failed
-    if abs(actual - expected) <= tol:
-        print(f"  PASS  {label}: {actual:.6f}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}: got {actual:.6f}, expected {expected:.6f}  (delta={abs(actual-expected):.8f})")
-        failed += 1
-
-
-def check_true(label, condition, detail=""):
-    global passed, failed
-    if condition:
-        print(f"  PASS  {label}")
-        passed += 1
-    else:
-        print(f"  FAIL  {label}  {detail}")
-        failed += 1
-
-
-# ── Core geometry functions (mirrors spec Sections 9 and 7.3) ────────────────
-
-def tangent_distance(corner_angle_deg, radius):
-    """Distance from corner vertex to arc tangent point along each edge."""
-    return radius / math.tan(math.radians(corner_angle_deg / 2))
-
-
-def centre_offset(corner_angle_deg, radius):
-    """Distance from corner vertex to arc centre along inward bisector."""
-    return radius / math.sin(math.radians(corner_angle_deg / 2))
 
 
 def arc_centre(start, end, radius, large_arc, clockwise):
@@ -65,34 +35,6 @@ def arc_centre(start, end, radius, large_arc, clockwise):
     return mx + sign*d*px, my + sign*d*py
 
 
-def inward_bisector(edge_a_dir, edge_b_dir):
-    """
-    Inward bisector direction at a corner vertex.
-    edge_a_dir: direction the arriving edge is travelling (TOWARD vertex).
-    edge_b_dir: direction the departing edge is travelling (AWAY from vertex).
-    Returns normalised (bx, by).
-    Spec formula: normalise((-edge_a_dir) + edge_b_dir)
-    """
-    bx = -edge_a_dir[0] + edge_b_dir[0]
-    by = -edge_a_dir[1] + edge_b_dir[1]
-    mag = math.sqrt(bx*bx + by*by)
-    return bx/mag, by/mag
-
-
-def corner_arc_start_end(vertex, edge_a_dir, edge_b_dir, radius, corner_angle_deg):
-    """
-    Compute arc start and end points for a corner of given angle.
-    Arc start is on edge_a (arriving), arc end is on edge_b (departing).
-    Both points are tangent_distance from vertex along their respective edges.
-    """
-    td = tangent_distance(corner_angle_deg, radius)
-    # arc_start: go BACKWARD from vertex along edge_a (opposite of arriving dir)
-    arc_start = (vertex[0] - edge_a_dir[0]*td, vertex[1] - edge_a_dir[1]*td)
-    # arc_end: go FORWARD from vertex along edge_b (same as departing dir)
-    arc_end   = (vertex[0] + edge_b_dir[0]*td, vertex[1] + edge_b_dir[1]*td)
-    return arc_start, arc_end
-
-
 # ── Reference values from spec (Section A.5 reference table) ─────────────────
 
 R = 9.0
@@ -103,21 +45,21 @@ short_end_angle = 90.0 - leg_angle   # 85.486°
 
 # ══════════════════════════════════════════════════════════════════════════════
 print("\n── Test 1: Tangent distances ──")
-check("tang 90°",           tangent_distance(90.0, R),          9.0000)
-check("tang long-end",      tangent_distance(long_end_angle, R), 8.3175, tol=1e-3)
-check("tang short-end",     tangent_distance(short_end_angle, R),9.7385, tol=1e-3)
+h.check("tang 90°",           tang(90.0, R),          9.0000)
+h.check("tang long-end",      tang(long_end_angle, R), 8.3175, tol=1e-3)
+h.check("tang short-end",     tang(short_end_angle, R),9.7385, tol=1e-3)
 
 print("\n── Test 2: Centre offsets ──")
-check("centre 90°",         centre_offset(90.0, R),             12.7279, tol=1e-3)
-check("centre long-end",    centre_offset(long_end_angle, R),   12.2548, tol=1e-3)
-check("centre short-end",   centre_offset(short_end_angle, R),  13.2604, tol=1e-3)
+h.check("centre 90°",         centre_offset(90.0, R),             12.7279, tol=1e-3)
+h.check("centre long-end",    centre_offset(long_end_angle, R),   12.2548, tol=1e-3)
+h.check("centre short-end",   centre_offset(short_end_angle, R),  13.2604, tol=1e-3)
 
 print("\n── Test 3: Bisector direction ──")
 # 90° corner at TL: edge_a arriving from below (0,-1) → toward TL = dir (0,-1)
 # edge_b departing rightward (+1,0)
 bisector_90 = inward_bisector((0, -1), (1, 0))
-check("bisector_90 x", bisector_90[0], math.sqrt(2)/2, tol=1e-6)
-check("bisector_90 y", bisector_90[1], math.sqrt(2)/2, tol=1e-6)
+h.check("bisector_90 x", bisector_90[0], math.sqrt(2)/2, tol=1e-6)
+h.check("bisector_90 y", bisector_90[1], math.sqrt(2)/2, tol=1e-6)
 
 # TR corner (long_end_angle = 94.514°): edge_a arrives along +X, edge_b departs along leg_right
 leg_a_x = math.sin(math.radians(leg_angle))
@@ -125,9 +67,9 @@ leg_a_y = math.cos(math.radians(leg_angle))
 bisector_TR = inward_bisector((1, 0), (leg_a_x, leg_a_y))
 print(f"  bisector_TR: ({bisector_TR[0]:.6f}, {bisector_TR[1]:.6f})")
 # Must point INTO the panel: dx < 0, dy > 0 (left and down from TR in Y-down)
-check_true("bisector_TR dx < 0 (into panel)", bisector_TR[0] < 0,
+h.check_true("bisector_TR dx < 0 (into panel)", bisector_TR[0] < 0,
            f"dx={bisector_TR[0]:.4f}")
-check_true("bisector_TR dy > 0 (into panel)", bisector_TR[1] > 0,
+h.check_true("bisector_TR dy > 0 (into panel)", bisector_TR[1] > 0,
            f"dy={bisector_TR[1]:.4f}")
 
 # Verify centre is R away from both arc points
@@ -139,13 +81,13 @@ co = centre_offset(long_end_angle, R)
 centre_TR = (TR[0] + co*bisector_TR[0], TR[1] + co*bisector_TR[1])
 d1 = math.sqrt((centre_TR[0]-arc_start_TR[0])**2 + (centre_TR[1]-arc_start_TR[1])**2)
 d2 = math.sqrt((centre_TR[0]-arc_end_TR[0])**2   + (centre_TR[1]-arc_end_TR[1])**2)
-check("centre_TR dist to arc_start = R", d1, R)
-check("centre_TR dist to arc_end = R",   d2, R)
+h.check("centre_TR dist to arc_start = R", d1, R)
+h.check("centre_TR dist to arc_end = R",   d2, R)
 
 # Verify arc_centre() function gives same result
 cx, cy = arc_centre(arc_start_TR, arc_end_TR, R, large_arc=False, clockwise=True)
-check("arc_centre() matches bisector formula x", cx, centre_TR[0])
-check("arc_centre() matches bisector formula y", cy, centre_TR[1])
+h.check("arc_centre() matches bisector formula x", cx, centre_TR[0])
+h.check("arc_centre() matches bisector formula y", cy, centre_TR[1])
 
 print("\n── Test 4: Wrong bisector formula gives wrong answer ──")
 # Verify that the OLD (wrong) formula: normalise(-a + -b) gives different/wrong centre
@@ -155,7 +97,7 @@ mag_wrong = math.sqrt(bx_wrong**2 + by_wrong**2)
 bisector_wrong = (bx_wrong/mag_wrong, by_wrong/mag_wrong)
 centre_wrong = (TR[0] + co*bisector_wrong[0], TR[1] + co*bisector_wrong[1])
 d_wrong = math.sqrt((centre_wrong[0]-arc_start_TR[0])**2 + (centre_wrong[1]-arc_start_TR[1])**2)
-check_true("wrong bisector gives wrong distance (not R)",
+h.check_true("wrong bisector gives wrong distance (not R)",
            abs(d_wrong - R) > 0.1,
            f"distance={d_wrong:.4f}, should differ from R={R}")
 print(f"  NOTE  Wrong formula centre is {d_wrong:.4f}mm from arc_start (correct is {R}mm)")
@@ -163,15 +105,15 @@ print(f"  NOTE  Wrong formula centre is {d_wrong:.4f}mm from arc_start (correct 
 print("\n── Test 5: 90° corner — arc_centre() spot check ──")
 # Arc from (10,0) to (0,10), R=10, clockwise, should give centre (0,0)
 cx, cy = arc_centre((10,0), (0,10), 10.0, large_arc=False, clockwise=True)
-check("90° arc centre x", cx, 0.0)
-check("90° arc centre y", cy, 0.0)
+h.check("90° arc centre x", cx, 0.0)
+h.check("90° arc centre y", cy, 0.0)
 
 print("\n── Test 6: arc_centre() — chord > diameter raises ──")
 try:
     arc_centre((0,0), (100,0), 10.0, False, True)
-    check_true("chord > diameter raises ValueError", False, "no exception")
+    h.check_true("chord > diameter raises ValueError", False, "no exception")
 except ValueError:
-    check_true("chord > diameter raises ValueError", True)
+    h.check_true("chord > diameter raises ValueError", True)
 
 print("\n── Test 7: All four BASE corners — centres inside panel ──")
 # Panel: long=180, short=120, length=380 (trapezoid BASE)
@@ -216,21 +158,20 @@ for name, V, ea, eb, angle, interior_test in corners:
     co = centre_offset(angle, R)
     cx = V[0] + co*b[0];  cy = V[1] + co*b[1]
     interior = interior_test((cx, cy))
-    check_true(f"corner {name} centre inside panel", interior,
+    h.check_true(f"corner {name} centre inside panel", interior,
                f"centre=({cx:.3f},{cy:.3f})")
     # Also verify arc start/end are R from centre
     arc_s, arc_e = corner_arc_start_end(V, ea, eb, R, angle)
     d_s = math.sqrt((cx-arc_s[0])**2 + (cy-arc_s[1])**2)
     d_e = math.sqrt((cx-arc_e[0])**2 + (cy-arc_e[1])**2)
-    check(f"corner {name} arc_start dist", d_s, R)
-    check(f"corner {name} arc_end dist",   d_e, R)
+    h.check(f"corner {name} arc_start dist", d_s, R)
+    h.check(f"corner {name} arc_end dist",   d_e, R)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-print(f"\n{'='*60}")
-print(f"Results: {passed} passed, {failed} failed")
-if failed == 0:
+h.summary()
+if h.failed == 0:
     print("ALL PASS — corner arc geometry is correct.")
 else:
     print("FAILURES DETECTED — review corner arc formulas before proceeding.")
-sys.exit(0 if failed == 0 else 1)
+h.exit()
