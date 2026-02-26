@@ -2,7 +2,7 @@
 
 Parametric laser-cut box generator for:
 - generic: trapezoidal boxes, or
-- special csse: trapezoidal music instrument bodies (stringed instruments, drums, etc.).
+- special case: trapezoidal music instrument bodies (stringed instruments, drums, etc.).
 
 Note: This project is an experiment in collaborating with Claude Code to
 see if it can be made to generate good, correct code, on the first try by
