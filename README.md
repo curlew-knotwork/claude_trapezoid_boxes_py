@@ -1,6 +1,8 @@
 # claude_trapezoid_box_py
 
-Parametric laser-cut box generator for trapezoidal instrument bodies (dulcimers, zithers, similar).
+Parametric laser-cut box generator for:
+- generic: trapezoidal boxes, or
+- special case: trapezoidal music instrument bodies (stringed instruments, drums, etc.).
 
 Note: This project is an experiment in collaborating with Claude Code to
 see if it can be made to generate good, correct code, on the first try by
@@ -9,6 +11,11 @@ to a bounded problem of laser cutting trapezoid boxes with a laser cutter
 that only works with a bed and orthogonal laser.
 
 Version: **v0.20** — spec complete, geometry verified, implementation pending.
+
+Status: Code, etc. is from Claude "as is" with no warranty of any kind whatsoever.
+None of it has been tried or tested yet with a real laser cutter. 26 Feb 2026
+
+License: 'No License' at the present time.
 
 ---
 
