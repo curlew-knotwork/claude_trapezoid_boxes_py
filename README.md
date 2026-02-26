@@ -10,6 +10,9 @@ that only works with a bed and orthogonal laser.
 
 Version: **v0.20** — spec complete, geometry verified, implementation pending.
 
+Status: Code, etc. is from Claude "as is" with no warranty of any kind whatsoever.
+None of it has been tried or tested yet with a real laser cutter. 26 Feb 2026
+
 ---
 
 ## What it does
