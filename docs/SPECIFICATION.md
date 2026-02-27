@@ -590,7 +590,9 @@ All numeric literals that appear in the codebase must be defined here. No other 
 > ℹ️ SVG_CB_SCORE_COLOUR         = (0, 0, 0)      # colorblind mode: score = dashed black
 
 
-> ℹ️ SVG_HAIRLINE_MM             = 0.001          # Epilog-compatible hairline
+> ℹ️ SVG_HAIRLINE_MM             = 0.001          # Epilog-compatible hairline — for laser output only
+> ℹ️ SVG_PREVIEW_STROKE_MM      = 0.3            # visible stroke for screen preview — ALWAYS use this during development
+> ℹ️ SVG_CUT_STROKE_WIDTH       = "0.1"          # unitless — scales with viewBox, visible on screen AND hairline at laser DPI. Use this. Always.
 
 
 > ℹ️ SVG_LABEL_STROKE_MM         = 0.2
@@ -1617,14 +1619,24 @@ path_to_svg_d(path: ClosedPath, origin: Point) -&gt; str — converts ClosedPath
 One M command only; Z closes. Arc has two equal radii (circular), x-rotation always 0. All values to 4 decimal places.
 
 ### 15.4 Stroke and Colour Conventions
-| Purpose | Default | Colorblind mode |
-|---|---|
-| Cut lines (through-cut) | rgb(255,0,0) solid 0.001mm | rgb(0,0,0) solid 0.001mm |
-| Score lines (non-cut) | rgb(0,0,255) dashed 0.001mm | rgb(0,0,0) dashed 0.001mm |
-| Labels and marks | rgb(0,0,0) 0.2mm | rgb(0,0,0) 0.2mm |
+| Purpose | stroke-width | Default colour | Colorblind mode |
+|---|---|---|---|
+| Cut lines (through-cut) | 0.1 (unitless) | rgb(255,0,0) solid | rgb(0,0,0) solid |
+| Score lines (non-cut) | 0.1 (unitless) | rgb(0,0,255) dashed | rgb(0,0,0) dashed |
+| Labels and marks | 0.2mm | rgb(0,0,0) | rgb(0,0,0) |
 
+stroke-width MUST be unitless "0.1" — never "0.001mm" or "0.3mm". Unitless scales with the viewBox: visible on screen at any zoom, true hairline at laser cutter DPI.
 
-In colorblind mode, cut vs score is distinguished by dash pattern only. Score: stroke-dasharray=&quot;5.0000 2.0000&quot;.
+In colorblind mode, cut vs score is distinguished by dash pattern only. Score: stroke-dasharray="5.0000 2.0000".
+
+### 15.4.1 Mandatory Output Verification
+write() MUST call verify_output() before writing any file. verify_output() raises RuntimeError if:
+- Any path coordinate is non-finite or outside sheet bounds
+- Any path does not end with Z
+- Any two panel bounding boxes overlap
+- Soundhole corner angles deviate > 0.1° from expected values
+
+No output file is created if verification fails. SVG that has not been verified must never be presented to the user.
 
 ### 15.5 What the SVG Writer Renders
 For each Panel at its layout origin (all coordinates shifted by origin.x, origin.y):
