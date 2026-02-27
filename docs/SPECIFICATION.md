@@ -114,7 +114,7 @@ Python 3.11. Use dataclasses, match statements, and pathlib freely.
 > ℹ️ │   ├── panels.py                # Instrument mode Panel assembly
 
 
-> ℹ️ │   ├── soundhole.py             # Round, f-hole, triskele + Helmholtz calculation
+> ℹ️ │   ├── soundhole.py             # Round, f-hole, rounded-trapezoid + Helmholtz calculation
 
 
 > ℹ️ │   ├── kerfing.py               # Kerfing strip and fillet geometry
@@ -333,7 +333,7 @@ SoundHoleResult — result of Helmholtz calculation.
 > ℹ️ type:               SoundHoleType
 
 
-> ℹ️ diameter_or_size_mm: float   # bounding diameter (round/triskele) or length (f-hole)
+> ℹ️ diameter_or_size_mm: float   # bounding diameter (round) or long-edge length (rounded-trapezoid/f-hole)
 
 
 > ℹ️ open_area_mm2:      float    # total open area across all holes
@@ -396,7 +396,11 @@ LidType (enum): NONE, LIFT_OFF, SLIDING, HINGED, FLAP
 
 FingerDirection (enum): INWARD, OUTWARD
 
-SoundHoleType (enum): ROUND, FHOLE, TRISKELE
+SoundHoleType (enum): ROUND, FHOLE, ROUNDED_TRAPEZOID
+
+SoundHoleOrientation (enum): SAME, FLIPPED
+  SAME    — hole long edge toward tail, matching body orientation (default)
+  FLIPPED — hole long edge toward neck, opposite to body
 
 CommonConfig — parameters shared by both modes.
 
@@ -461,7 +465,7 @@ length and leg are mutually exclusive: exactly one must be non-None in a valid c
 
 BoxConfig: fields: common: CommonConfig, lid: LidType = LidType.NONE, hinge_diameter: float = 6.0
 
-InstrumentConfig: fields: common: CommonConfig, top_thickness: float = 3.0, kerf_thickness: float = 3.0, kerfing: bool = True, kerf_height: float = 12.0, kerf_width: float = 6.0, kerf_top_height: float = 10.0, kerf_top_width: float = 5.0, soundhole_type: SoundHoleType | None = None, helmholtz_freq: float = 110.0, soundhole_diameter: float | None = None, soundhole_size: float | None = None, soundhole_x: float | None = None, soundhole_y: float | None = None, neck_clearance: float = 60.0, hardware: bool = False, neck_block_thickness: float = 25.0, tail_block_thickness: float = 15.0, braces: bool = False, scale_length: float | None = None, finger_direction: FingerDirection = FingerDirection.OUTWARD
+InstrumentConfig: fields: common: CommonConfig, top_thickness: float = 3.0, kerf_thickness: float = 3.0, kerfing: bool = True, kerf_height: float = 12.0, kerf_width: float = 6.0, kerf_top_height: float = 10.0, kerf_top_width: float = 5.0, soundhole_type: SoundHoleType | None = None, soundhole_orientation: SoundHoleOrientation = SoundHoleOrientation.SAME, soundhole_long_ratio: float | None = None, soundhole_aspect: float | None = None, soundhole_r_mm: float | None = None, helmholtz_freq: float = 110.0, soundhole_diameter: float | None = None, soundhole_size: float | None = None, soundhole_x: float | None = None, soundhole_y: float | None = None, neck_clearance: float = 60.0, hardware: bool = False, neck_block_thickness: float = 25.0, tail_block_thickness: float = 15.0, braces: bool = False, scale_length: float | None = None, finger_direction: FingerDirection = FingerDirection.OUTWARD
 
 ## 6. constants.py
 All numeric literals that appear in the codebase must be defined here. No other file introduces naked numbers.
@@ -661,22 +665,18 @@ All numeric literals that appear in the codebase must be defined here. No other 
 > ℹ️ FHOLE_PAIR_OFFSET_RATIO     = 0.45
 
 
-> ℹ️ # Triskele shape proportions
+> ℹ️ # Rounded-trapezoid soundhole proportions
+> ℹ️ # Hole inherits body long/short taper ratio. Corner radius is a FIXED MM VALUE —
+> ℹ️ # a ratio-based radius fails at steep leg angles (sweep >90°, arc visually dominates).
+> ℹ️ # Aspect ratio must always be explicit (0.3–2.0); None/inherit is rejected at validation.
+> ℹ️ # Default orientation "same": long edge toward tail, matching body. "flipped": opposite.
+> ℹ️ # Default parameters chosen to give ~150Hz Helmholtz resonance on dulcimer preset.
 
-
-> ℹ️ TRISKELE_PETAL_HEIGHT_RATIO = 0.45
-
-
-> ℹ️ TRISKELE_PETAL_WIDTH_RATIO  = 0.22
-
-
-> ℹ️ TRISKELE_OUTER_ARC_RATIO    = 0.28
-
-
-> ℹ️ TRISKELE_INNER_ARC_RATIO    = 0.06
-
-
-> ℹ️ TRISKELE_FILL_FACTOR        = 0.60
+> ℹ️ RTRAP_LONG_TO_BODY_RATIO    = 0.28   # hole long-edge = body long_outer × this
+> ℹ️ RTRAP_ASPECT_RATIO          = 0.6    # hole height = hole_long × this (0.3–2.0, no None)
+> ℹ️ RTRAP_CORNER_R_MM           = 2.0    # corner fillet radius, fixed mm (NOT a ratio)
+> ℹ️ RTRAP_MAX_R_EDGE_FRACTION   = 0.15   # r must be <= min(all edges) × this; enforced at validation
+> ℹ️ RTRAP_ORIENTATION           = "same" # "same": long edge toward tail (matches body); "flipped": opposite
 
 
 > ℹ️ # Test strip
@@ -719,6 +719,21 @@ All numeric literals that appear in the codebase must be defined here. No other 
 
 
 > ℹ️ ERR_VALIDATION_GROOVE_ANGLE_TOO_STEEP = &quot;VALIDATION_GROOVE_ANGLE_TOO_STEEP&quot;
+
+
+> ℹ️ ERR_VALIDATION_SOUNDHOLE_TOO_TALL     = &quot;VALIDATION_SOUNDHOLE_TOO_TALL&quot;
+
+
+> ℹ️ ERR_VALIDATION_SOUNDHOLE_LONG_RATIO   = &quot;VALIDATION_SOUNDHOLE_LONG_RATIO&quot;
+
+
+> ℹ️ ERR_VALIDATION_SOUNDHOLE_ASPECT       = &quot;VALIDATION_SOUNDHOLE_ASPECT&quot;
+
+
+> ℹ️ ERR_VALIDATION_SOUNDHOLE_RADIUS       = &quot;VALIDATION_SOUNDHOLE_RADIUS&quot;
+
+
+> ℹ️ ERR_VALIDATION_SOUNDHOLE_LATERAL      = &quot;VALIDATION_SOUNDHOLE_LATERAL&quot;
 
 
 ## 7. core/utils.py
@@ -854,6 +869,17 @@ Arc sampling: compute centre via arc_centre(); sample at angles from start_angle
 
 ## 8. core/trapezoid.py
 Pure trapezoid mathematics. No SVG. No joints. No side effects. Assumes all inputs are already validated — do not add defensive checks here.
+
+### Trapezoid Corner Angle Invariant
+**This invariant applies to ALL trapezoid shapes in this project** (body panels, soundhole, any future trapezoidal features):
+
+For a trapezoid traversed clockwise, narrow-end corners are always **obtuse** (interior angle = 90° + leg_angle) and wide-end corners are always **acute** (interior angle = 90° − leg_angle).
+
+Body panel assignment: TL and TR are narrow-end corners → long_end_angle = 90° + leg_angle. BL and BR are wide-end corners → short_end_angle = 90° − leg_angle.
+
+Soundhole assignment (SAME orientation): narrow-end corners (top for "same", bottom for "flipped") → obtuse. Wide-end corners → acute. Assigning these backwards produces geometrically invalid or visually wrong corner arcs.
+
+Proof requirement: every trapezoid shape generated by this tool must have its four corner angles verified by computing the actual interior angle from edge geometry and asserting it matches the assigned value. See proof scripts 06 (body panel) and 05 (soundhole).
 
 ### TrapezoidGeometry Dataclass
 > ℹ️ @dataclass(frozen=True)
@@ -1476,7 +1502,14 @@ Sliding lid: depth &gt; 3 × thickness (need room for slide groove).
 Sliding lid + angled walls: leg_angle_deg &lt; arccos(thickness / (thickness + tolerance)). At steeper angles the square-cut lid edge cannot seat in the tilted groove without binding. Default limit (T=3, tol=0.1): 14.59 degrees. Error code: ERR_VALIDATION_GROOVE_ANGLE_TOO_STEEP.
 
 ### 12.4 Instrument Mode Additional Rules
-neck_clearance + soundhole_size_estimate &lt; length (sound hole must fit longitudinally)
+neck_clearance + soundhole_size_estimate < length (sound hole must fit longitudinally). For rounded-trapezoid holes the precise check is: neck_clearance + hole_height < length − tail_block_thickness. ERR_VALIDATION_SOUNDHOLE_TOO_TALL.
+
+For rounded-trapezoid holes:
+- 0.1 ≤ soundhole_long_ratio ≤ 0.6. ERR_VALIDATION_SOUNDHOLE_LONG_RATIO.
+- 0.3 ≤ soundhole_aspect ≤ 2.0 (None is rejected). ERR_VALIDATION_SOUNDHOLE_ASPECT.
+- soundhole_r_mm > 0 and soundhole_r_mm ≤ min(hole_short, hole_long, leg_edge) × RTRAP_MAX_R_EDGE_FRACTION. ERR_VALIDATION_SOUNDHOLE_RADIUS.
+- Hole laterally within soundboard at both y_near and y_far: hole_long/2 < soundboard_half_width_at(y). ERR_VALIDATION_SOUNDHOLE_LATERAL.
+- soundhole_orientation ignored (no error) for non-trapezoid types.
 
 scale_length &gt; length if provided
 
@@ -1863,7 +1896,7 @@ soundhole.compute(config, geom) -&gt; tuple[list[Hole], SoundHoleResult] | None 
 ### 18.2 Sound Hole Positioning in Soundboard Local Coordinates
 x_centre (all types, default): long_outer / 2 (axis of symmetry).
 
-y_centre (longitudinal auto-position): y_centre = neck_block_thickness + neck_clearance + hole_half_size where hole_half_size = radius (round), bounding_diameter/2 (triskele), total_length/2 (f-hole).
+y_centre (longitudinal auto-position): y_centre = neck_block_thickness + neck_clearance + hole_half_size where hole_half_size = radius (round), long_edge/2 (rounded-trapezoid), total_length/2 (f-hole).
 
 User override --soundhole-x maps directly to y_centre (distance from short end). User override --soundhole-y offsets from centreline: x_centre = long_outer/2 + soundhole_y.
 
@@ -1875,8 +1908,47 @@ Single CircleHole. L_eff = top_thickness + 0.85 × diameter (iterative). User ov
 ### 18.4 F-Holes
 Paired, symmetric about centreline. Shape defined as proportions of total f-hole length L_fh (see constants.py for all ratios). Upper and lower eye circles. Upper and lower shafts as cubic Béziers. Nicks at waist as 1.5mm score marks (not through-cuts). Each f-hole is one ClosedHole. User override: --soundhole-size (sets L_fh directly).
 
-### 18.5 Triskele
-Three petal/teardrop shapes rotated 120° around a common centre. Petal height = 0.45 × bounding_diameter. Petal width at widest = 0.22 × bounding_diameter. Outer arc radius = 0.28 × bounding_diameter. Inner arc radius = 0.06 × bounding_diameter. Generate one petal, rotate_path 120° and 240° for the other two. All three are ClosedHole objects. User override: --soundhole-diameter.
+### 18.5 Rounded-Trapezoid Hole
+A single ClosedHole with the same trapezoidal taper as the body, at reduced scale, with small rounded corner fillets for smooth airflow.
+
+#### Dimensions
+Derived from body geometry and RTRAP constants:
+- hole_long   = long_outer × soundhole_long_ratio  (default: RTRAP_LONG_TO_BODY_RATIO = 0.28)
+- hole_short  = hole_long × (short_outer / long_outer)  [inherits body taper ratio]
+- hole_height = hole_long × soundhole_aspect  (default: RTRAP_ASPECT_RATIO = 0.6)
+- hole_r      = soundhole_r_mm  (default: RTRAP_CORNER_R_MM = 2.0mm, fixed — NOT a ratio)
+
+Default values (dulcimer preset, long=180, short=120): hole_long=50mm, hole_short=34mm, hole_height=30mm, hole_r=2mm → ~150Hz.
+
+User overrides: --soundhole-size sets hole_long directly; --soundhole-orientation sets SAME or FLIPPED.
+
+#### Orientation
+Controlled by soundhole_orientation (SoundHoleOrientation enum):
+- SAME    (default): hole long edge toward tail, matching body — both wide ends on same side.
+- FLIPPED: hole long edge toward neck — wide end opposite to body wide end.
+
+#### Corner angle rule (INVARIANT — applies to all trapezoid shapes in this project)
+For any trapezoid traversed clockwise, narrow-end corners are OBTUSE (90° + leg_angle) and wide-end corners are ACUTE (90° − leg_angle). This is the same rule as the body panel (TL/TR = narrow = obtuse = long_end_angle; BL/BR = wide = acute = short_end_angle). Assigning these angles backwards produces geometrically impossible or visually wrong arcs. This rule must be verified by proof for every trapezoid shape generated.
+
+Corner arc construction: arc centre is inside the hole (inward fillet). SVG arc uses sweep=1 (clockwise). Arc chord = 2r·cos(angle/2) ≤ 2r always — validity is guaranteed by correct angle assignment, not by radius choice.
+
+#### Acoustic area
+A = (hole_long + hole_short) / 2 × hole_height − 4 × r² × (1 − π/4)
+
+Helmholtz L_eff uses equivalent diameter: D_eq = 2√(A/π). L_eff = top_thickness + 0.85 × D_eq.
+
+#### Positioning
+x_centre = long_outer / 2 (body centreline — valid because body is symmetric about this line at all y).
+y_near = neck_block_thickness + neck_clearance (near edge of hole, measured from neck/short end).
+y_far = y_near + hole_height.
+
+#### Validation (ERR_VALIDATION raised if violated)
+- 0.3 ≤ soundhole_aspect ≤ 2.0 (None rejected — must be explicit)
+- 0.1 ≤ soundhole_long_ratio ≤ 0.6
+- hole_r > 0 and hole_r ≤ min(hole_short, hole_long, leg_edge_length) × RTRAP_MAX_R_EDGE_FRACTION
+  where leg_edge_length = √(hole_inset² + hole_height²) and hole_inset = (hole_long − hole_short)/2
+- neck_clearance + hole_height < length − tail_block_thickness  (hole must fit between blocks)
+- hole_long / 2 < long_outer / 2 − body_leg_inset_at_y_centre  (hole laterally within soundboard at both y_near and y_far)
 
 ## 19. Kerfing (instrument/kerfing.py)
 Kerfing provides airtight internal sealing at all joints and creates the gluing ledge for the soundboard. The builder rounds edges by hand and glues pieces in place. All pieces are undersized by KERF_UNDERSIZE_MM = 0.5mm to accommodate hand-rounding and provide glue gap.
@@ -1919,7 +1991,7 @@ Presets allow first-time users to get working output immediately. A preset is a 
 | pencil-box | box mode. Small open-top box. Good first project for students. |
 | storage-box | box mode. Medium box with lift-off lid. |
 | sliding-box | box mode. Compact box with sliding lid. Demonstrates sliding lid joint. |
-| dulcimer | instrument mode. long=180, short=120, length=380, depth=90, thickness=3, triskele soundhole, hardware, kerfing. |
+| dulcimer | instrument mode. long=180, short=120, length=380, depth=90, thickness=3, rounded-trapezoid soundhole, hardware, kerfing. |
 | tenor-guitar | instrument mode. Scaled-up dulcimer at tenor guitar proportions. |
 
 
@@ -2063,7 +2135,19 @@ Top-level flags handled before subcommand parsing. No subcommand required for --
 > ℹ️ --kerf-thickness FLOAT         Kerfing thickness (default: same as --thickness)
 
 
-> ℹ️ --soundhole-type [round|f-hole|triskele]
+> ℹ️ --soundhole-type [round|f-hole|rounded-trapezoid]
+
+
+> ℹ️ --soundhole-orientation [same|flipped]  rounded-trapezoid only: same=long edge toward tail (default), flipped=long edge toward neck
+
+
+> ℹ️ --soundhole-long-ratio FLOAT  rounded-trapezoid: hole_long as fraction of body long_outer (default: 0.28, range 0.1–0.6)
+
+
+> ℹ️ --soundhole-aspect FLOAT      rounded-trapezoid: hole_height = hole_long × this (default: 0.6, range 0.3–2.0)
+
+
+> ℹ️ --soundhole-r-mm FLOAT        rounded-trapezoid: corner fillet radius mm (default: 2.0)
 
 
 > ℹ️ --helmholtz-freq FLOAT         Target resonant frequency Hz (default: 110.0)
@@ -2136,7 +2220,7 @@ Top-level flags handled before subcommand parsing. No subcommand required for --
 > ℹ️ &quot;kerfing&quot;: true, &quot;kerf_height&quot;: 12.0, &quot;kerf_width&quot;: 6.0,
 
 
-> ℹ️ &quot;soundhole_type&quot;: &quot;triskele&quot;, &quot;helmholtz_freq&quot;: 110.0,
+> ℹ️ &quot;soundhole_type&quot;: &quot;rounded-trapezoid&quot;, &quot;helmholtz_freq&quot;: 110.0,
 
 
 > ℹ️ &quot;hardware&quot;: true, &quot;neck_block_thickness&quot;: 25.0,
@@ -2243,12 +2327,22 @@ Helmholtz: known V, f → known A. Hand-calculated verification.
 
 Round hole: L_eff convergence; diameter within 1% of hand calculation.
 
-Triskele: petal area sums to target; three petals at correct rotation angles.
+Rounded-trapezoid geometry checks (required for both SAME and FLIPPED orientations):
+- Corner angle invariant: compute actual interior angle at each of the four corners from edge geometry; assert narrow-end corners = obtuse (90°+leg_angle) ± 0.5° and wide-end corners = acute (90°−leg_angle) ± 0.5°.
+- Arc chord validity: chord = 2r·cos(angle/2) ≤ 2r at all four corners.
+- No arc overlap: remaining straight length on every edge > 0.5mm after subtracting both tangent distances.
+- Radius constraint: r ≤ min(hole_short, hole_long, leg_edge) × RTRAP_MAX_R_EDGE_FRACTION.
+- Straight segment directions: each of the four straight path segments has direction matching the computed edge unit vector within 0.01.
+- Positive segment lengths: all four straight segments > 0.5mm.
+- Fit within soundboard: hole_long/2 < soundboard_half_width at y_near and y_far.
+- Longitudinal fit: neck_clearance + hole_height < length − tail_block_thickness.
+- Acoustic area: area matches Helmholtz target within 1%.
+- Orientation SAME: long edge at tail (high y); orientation FLIPPED: long edge at neck (low y).
 
 F-hole: control point coordinates match FHOLE_* ratios in constants.py.
 
 ### 28.4 Integration Test
-Dulcimer config (long=180, short=120, length=380, depth=90, thickness=3, triskele, helmholtz=110, hardware, kerfing, braces). Verify: correct panel count; all bounding boxes within sheet_width; achieved frequency within 5% of 110 Hz; BASE and SOUNDBOARD perimeters match mating wall edge lengths; no exceptions.
+Dulcimer config (long=180, short=120, length=380, depth=90, thickness=3, rounded-trapezoid, helmholtz=110, hardware, kerfing, braces). Verify: correct panel count; all bounding boxes within sheet_width; achieved frequency within 5% of 110 Hz; BASE and SOUNDBOARD perimeters match mating wall edge lengths; no exceptions.
 
 ### 28.5 Golden File Regression Tests
 Three golden SVGs in tests/golden/. Integration test generates SVG for each config and compares byte-for-byte. Any geometry change that alters output requires conscious golden file update.
@@ -2296,7 +2390,7 @@ Random valid CommonConfigs within bounds (long 50–500mm, short 20–long, dept
 > ℹ️ BASE               180.0 × 380.0 mm  fingers: long=19, short=13, legs=43
 
 
-> ℹ️ SOUNDBOARD         180.0 × 380.0 mm  triskele ø52.3mm  [no finger joints]
+> ℹ️ SOUNDBOARD         180.0 × 380.0 mm  rounded-trap 50×34mm h=30mm  [no finger joints]
 
 
 > ℹ️ WALL_LONG          180.0 ×  90.0 mm
@@ -2323,13 +2417,25 @@ Random valid CommonConfigs within bounds (long 50–500mm, short 20–long, dept
 > ℹ️ Sound hole
 
 
-> ℹ️ Type:               triskele
+> ℹ️ Type:               rounded-trapezoid
 
 
-> ℹ️ Bounding diameter:  52.3 mm
+> ℹ️ Orientation:        same (long edge toward tail)
 
 
-> ℹ️ Total open area:    1,847 mm²
+> ℹ️ Long edge:          50.0 mm
+
+
+> ℹ️ Short edge:         34.0 mm
+
+
+> ℹ️ Height:             30.0 mm
+
+
+> ℹ️ Corner radius:      2.0 mm
+
+
+> ℹ️ Total open area:    1,247 mm²
 
 
 > ℹ️ Target frequency:   110.0 Hz

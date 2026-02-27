@@ -10,9 +10,28 @@ No dependencies beyond stdlib. Run with: python3 03_finger_joints.py
 import math
 import sys
 
-from check_harness import CheckHarness
+passed = 0
+failed = 0
 
-h = CheckHarness()
+
+def check(label, actual, expected, tol=1e-4):
+    global passed, failed
+    if abs(actual - expected) <= tol:
+        print(f"  PASS  {label}: {actual:.6f}")
+        passed += 1
+    else:
+        print(f"  FAIL  {label}: got {actual:.6f}, expected {expected:.6f}  (delta={abs(actual-expected):.8f})")
+        failed += 1
+
+
+def check_true(label, condition, detail=""):
+    global passed, failed
+    if condition:
+        print(f"  PASS  {label}")
+        passed += 1
+    else:
+        print(f"  FAIL  {label}  {detail}")
+        failed += 1
 
 
 # ── Core finger joint functions (mirrors spec Section 10) ────────────────────
@@ -101,43 +120,43 @@ tang_short = R / math.tan(math.radians(short_end_angle/2))  # 9.7385
 tang_90    = R                                               # 9.0000
 
 print("\n── Test 1: Auto finger width ──")
-h.check("auto fw = 3*T", fw, 9.0)
+check("auto fw = 3*T", fw, 9.0)
 
 print("\n── Test 2: Non-orthogonal joint corrections ──")
 D_eff  = effective_depth(T, leg_angle)
 W_over = rotational_overcut(T, leg_angle)
-h.check("D_eff  = T/cos(4.514°)", D_eff,  3.0093, tol=1e-3)
-h.check("W_over = T*tan(4.514°)", W_over, 0.2368, tol=1e-3)
+check("D_eff  = T/cos(4.514°)", D_eff,  3.0093, tol=1e-3)
+check("W_over = T*tan(4.514°)", W_over, 0.2368, tol=1e-3)
 
 # Verify D_eff * cos(alpha) = T (round-trip)
-h.check("D_eff * cos(alpha) = T", D_eff * math.cos(math.radians(leg_angle)), T)
+check("D_eff * cos(alpha) = T", D_eff * math.cos(math.radians(leg_angle)), T)
 
 # Verify W_over physical meaning: this is the lateral collision distance
 # during assembly rotation. Confirm: tan(alpha) = opposite/adjacent = W_over/T
-h.check("W_over/T = tan(alpha)", W_over/T, math.tan(math.radians(leg_angle)))
+check("W_over/T = tan(alpha)", W_over/T, math.tan(math.radians(leg_angle)))
 
 print("\n── Test 3: Structural safety check ──")
 ok, W_struct, W_over_c, alpha_max = structural_check(T, tol, leg_angle, fw)
-h.check("W_struct (dulcimer preset)", W_struct, 8.6632, tol=1e-3)
-h.check_true("W_struct >= T/2", ok, f"W_struct={W_struct:.4f}, min={T/2}")
+check("W_struct (dulcimer preset)", W_struct, 8.6632, tol=1e-3)
+check_true("W_struct >= T/2", ok, f"W_struct={W_struct:.4f}, min={T/2}")
 
 # Verify alpha_max formula
-h.check("alpha_max for defaults", alpha_max,
+check("alpha_max for defaults", alpha_max,
       math.degrees(math.atan((fw - tol - T*OVERCUT_MIN_STRUCT_RATIO) / T)), tol=1e-3)
 
 # At exactly alpha_max, W_struct should equal exactly T/2
 W_struct_at_max = structural_width(fw, tol, rotational_overcut(T, alpha_max))
-h.check("W_struct at alpha_max == T/2", W_struct_at_max, T * OVERCUT_MIN_STRUCT_RATIO)
+check("W_struct at alpha_max == T/2", W_struct_at_max, T * OVERCUT_MIN_STRUCT_RATIO)
 
 # Steeper angle should fail
 ok_steep, W_struct_steep, _, _ = structural_check(T, tol, alpha_max + 1.0, fw)
-h.check_true("angle > alpha_max fails structural check", not ok_steep,
+check_true("angle > alpha_max fails structural check", not ok_steep,
            f"W_struct={W_struct_steep:.4f}")
 
 print("\n── Test 4: Finger count and width — BASE edges ──")
 # BASE uses actual corner angles for its termination points
 
-avail_long  = finger_termination_point(long_o,  tang_short, tang_short)
+avail_long  = finger_termination_point(long_o,  tang_short, tang_short)  # BR=short_end, BL=short_end
 avail_short = finger_termination_point(short_o, tang_long,  tang_long)
 avail_leg   = finger_termination_point(leg_len, tang_short, tang_long)
 
@@ -149,19 +168,19 @@ print(f"  long  edge: avail={avail_long:.3f}mm, n={n_long},  fw={fw_long:.4f}mm"
 print(f"  short edge: avail={avail_short:.3f}mm, n={n_short}, fw={fw_short:.4f}mm")
 print(f"  leg   edge: avail={avail_leg:.3f}mm, n={n_leg},  fw={fw_leg:.4f}mm")
 
-h.check("n_long  = 17", n_long,  17)
-h.check("n_short = 11", n_short, 11)
-h.check("n_leg   = 39", n_leg,   39)
+check("n_long  = 17", n_long,  17)
+check("n_short = 11", n_short, 11)
+check("n_leg   = 39", n_leg,   39)
 
 # Counts are all odd
-h.check_true("n_long  is odd", n_long  % 2 == 1)
-h.check_true("n_short is odd", n_short % 2 == 1)
-h.check_true("n_leg   is odd", n_leg   % 2 == 1)
+check_true("n_long  is odd", n_long  % 2 == 1)
+check_true("n_short is odd", n_short % 2 == 1)
+check_true("n_leg   is odd", n_leg   % 2 == 1)
 
 # Total joint length = available length (no gaps)
-h.check("long  n*fw = avail",  n_long  * fw_long,  avail_long)
-h.check("short n*fw = avail",  n_short * fw_short, avail_short)
-h.check("leg   n*fw = avail",  n_leg   * fw_leg,   avail_leg)
+check("long  n*fw = avail",  n_long  * fw_long,  avail_long)
+check("short n*fw = avail",  n_short * fw_short, avail_short)
+check("leg   n*fw = avail",  n_leg   * fw_leg,   avail_leg)
 
 print("\n── Test 5: Wall panels inherit BASE finger geometry (BASE-as-master) ──")
 # Wall panel available lengths use tang_90 from their own 90° corners
@@ -180,21 +199,21 @@ n_wall_long_independent,  _ = finger_count_and_width(avail_wall_long,  fw)
 n_wall_short_independent, _ = finger_count_and_width(avail_wall_short, fw)
 
 # For long/short: independent calculation gives SAME count but different fw
-h.check("WALL_LONG independent count same as BASE",  n_wall_long_independent,  n_long)
-h.check("WALL_SHORT independent count same as BASE", n_wall_short_independent, n_short)
+check("WALL_LONG independent count same as BASE",  n_wall_long_independent,  n_long)
+check("WALL_SHORT independent count same as BASE", n_wall_short_independent, n_short)
 
 # But the spatial offset between start-of-finger-zone is significant for long/short:
 offset_long  = abs(tang_short - tang_90)  # 0.739mm
 offset_short = abs(tang_long  - tang_90)  # 0.683mm
-h.check_true("WALL_LONG spatial offset > tolerance (requires inheritance)",
+check_true("WALL_LONG spatial offset > tolerance (requires inheritance)",
            offset_long > tol,
            f"offset={offset_long:.3f}mm > tol={tol}mm")
-h.check_true("WALL_SHORT spatial offset > tolerance (requires inheritance)",
+check_true("WALL_SHORT spatial offset > tolerance (requires inheritance)",
            offset_short > tol,
            f"offset={offset_short:.3f}mm > tol={tol}mm")
 # WALL_LEG is fine independently (delta < tol)
 delta_leg = abs(avail_wall_leg - avail_leg)
-h.check_true("WALL_LEG delta within tolerance",
+check_true("WALL_LEG delta within tolerance",
            delta_leg < tol,
            f"delta={delta_leg:.4f}mm")
 
@@ -205,22 +224,22 @@ burn = 0.05  # mm, half kerf
 tab_after_burn  = fw - 2 * burn
 slot_after_burn = fw + 2 * burn
 clearance = slot_after_burn - tab_after_burn
-h.check("tab after burn = fw - 2*burn",  tab_after_burn,  fw - 2*burn)
-h.check("slot after burn = fw + 2*burn", slot_after_burn, fw + 2*burn)
-h.check("clearance = 4*burn",            clearance,       4*burn)
+check("tab after burn = fw - 2*burn",  tab_after_burn,  fw - 2*burn)
+check("slot after burn = fw + 2*burn", slot_after_burn, fw + 2*burn)
+check("clearance = 4*burn",            clearance,       4*burn)
 # With tolerance applied: effective clearance includes tolerance on top of burn
 effective_clearance = clearance + 2*tol  # tolerance on each side of slot
-h.check("effective clearance = 4*burn + 2*tol", effective_clearance, 4*burn + 2*tol)
+check("effective clearance = 4*burn + 2*tol", effective_clearance, 4*burn + 2*tol)
 
 print("\n── Test 7: Sliding lid width ──")
 # Correct formula from spec: short_inner - 2*(thickness+tolerance)
 # = (short_outer - 2T) - 2*(T+tol) = short_outer - 4T - 2*tol
 lid_w = (short_o - 2*T) - 2*(T + tol)
-h.check("sliding lid width = short_inner - 2*(T+tol)", lid_w, 107.8)
+check("sliding lid width = short_inner - 2*(T+tol)", lid_w, 107.8)
 
 # The WRONG formula from an earlier version of the spec:
 lid_w_wrong = short_o + 2*(T + tol)
-h.check_true("wrong formula (short_outer + 2*(T+tol)) gives wider lid",
+check_true("wrong formula (short_outer + 2*(T+tol)) gives wider lid",
            lid_w_wrong > short_o,
            f"wrong={lid_w_wrong:.1f}mm, correct={lid_w:.1f}mm")
 print(f"  NOTE  Wrong formula gives {lid_w_wrong:.1f}mm, correct is {lid_w:.1f}mm — would not fit")
@@ -229,19 +248,92 @@ print("\n── Test 8: Groove angle limit for sliding lid ──")
 # Groove width = T + tol. Lid edge effective width at angle = T/cos(alpha).
 # Fits if T/cos(alpha) <= T + tol → cos(alpha) >= T/(T+tol)
 crit_angle = math.degrees(math.acos(T / (T + tol)))
-h.check("critical groove angle", crit_angle, 14.593, tol=0.01)
+check("critical groove angle", crit_angle, 14.593, tol=0.01)
 # Dulcimer angle is safe
-h.check_true("dulcimer angle < critical", leg_angle < crit_angle,
+check_true("dulcimer angle < critical", leg_angle < crit_angle,
            f"{leg_angle:.3f}° < {crit_angle:.3f}°")
 # At exactly critical angle, lid just fits
 T_eff_at_crit = T / math.cos(math.radians(crit_angle))
-h.check("T_eff at critical angle = T+tol", T_eff_at_crit, T + tol)
+check("T_eff at critical angle = T+tol", T_eff_at_crit, T + tol)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-h.summary()
-if h.failed == 0:
+print("\n── Test 9: Finger zone boundary placement — fingers must not cross arc tangent points ──")
+# This test closes the spec gap exposed by the 06_svg_primitives.py visual check.
+# It is not enough that available_length and count are correct arithmetically.
+# We must also verify that:
+#   finger_zone_start == arc_end of preceding corner  (in global coords)
+#   finger_zone_end   == arc_start of next corner     (in global coords)
+# i.e. fingers fill the zone exactly from tangent point to tangent point, no more.
+
+# For each BASE edge, compute the global arc_end and arc_start x-coordinates
+# and confirm that finger_zone_start and finger_zone_end match them exactly.
+
+leg_ax = math.sin(math.radians(leg_angle))
+leg_ay = math.cos(math.radians(leg_angle))
+leg_inset = (long_o - short_o) / 2   # 30mm
+
+# Panel corners
+TL = (leg_inset, 0.0)
+TR = (leg_inset + short_o, 0.0)
+BR = (long_o, 380.0)
+BL = (0.0, 380.0)
+
+def arc_end_x(vertex, outgoing_dir, tang_dist):
+    """arc_end = vertex + outgoing_dir * tang_dist"""
+    return vertex[0] + outgoing_dir[0] * tang_dist
+
+def arc_start_x(vertex, incoming_dir, tang_dist):
+    """arc_start = vertex - incoming_dir * tang_dist"""
+    return vertex[0] - incoming_dir[0] * tang_dist
+
+# SHORT TOP EDGE (TL → TR, both long_end_angle corners → tang_long)
+# TL outgoing dir = (1, 0); TR incoming dir = (1, 0)
+short_zone_start = arc_end_x(TL, (1, 0), tang_long)    # TL arc_end.x
+short_zone_end   = arc_start_x(TR, (1, 0), tang_long)  # TR arc_start.x
+short_zone_avail = short_zone_end - short_zone_start
+_, fw_short_check = finger_count_and_width(short_zone_avail, fw)
+short_fingers_end = short_zone_start + n_short * fw_short_check
+
+check("short edge: finger zone start == TL arc_end.x", short_zone_start, TL[0] + tang_long)
+check("short edge: finger zone end == TR arc_start.x", short_zone_end, TR[0] - tang_long)
+check("short edge: avail == zone_end - zone_start", short_zone_avail, avail_short)
+check("short edge: fingers end exactly at TR arc_start", short_fingers_end, short_zone_end)
+check_true("short edge: no finger extends past arc tangent point",
+           abs(short_fingers_end - short_zone_end) < 1e-6,
+           f"overshoot={short_fingers_end - short_zone_end:.6f}mm")
+
+# LONG BOTTOM EDGE (BR → BL)
+# BR = short_end_angle corner (tang_short); BL = long_end_angle corner (tang_long)
+# BR arc_end.x = BR.x - tang_short (travelling left); BL arc_start.x = BL.x + tang_short
+# Both BR and BL use short_end_angle (85.486°) → tang_short for both
+long_zone_start = BR[0] - tang_short   # br_arc_end.x (right boundary)
+long_zone_end   = BL[0] + tang_short   # bl_arc_start.x (left boundary)
+long_zone_avail = long_zone_start - long_zone_end
+_, fw_long_check = finger_count_and_width(long_zone_avail, fw)
+long_fingers_end = long_zone_start - n_long * fw_long_check  # travelling left
+
+check("long edge: finger zone start == BR arc_end.x", long_zone_start, BR[0] - tang_short)
+check("long edge: finger zone end == BL arc_start.x", long_zone_end, BL[0] + tang_short)
+check("long edge: avail == zone_start - zone_end", long_zone_avail, avail_long)
+check("long edge: fingers end exactly at BL arc_start", long_fingers_end, long_zone_end)
+check_true("long edge: no finger extends past arc tangent point",
+           abs(long_fingers_end - long_zone_end) < 1e-6,
+           f"overshoot={long_fingers_end - long_zone_end:.6f}mm")
+
+# LEG EDGE (BL → TL, mixed corners: BL=long_end_angle → tang_long, TL=short_end_angle → tang_short)
+leg_zone_start = tang_long    # from BL vertex along leg direction
+leg_zone_end   = leg_len - tang_short  # to TL vertex
+leg_zone_avail = leg_zone_end - leg_zone_start
+check("leg edge: avail == leg_len - tang_long - tang_short", leg_zone_avail, avail_leg)
+_, fw_leg_check = finger_count_and_width(leg_zone_avail, fw)
+leg_fingers_end = leg_zone_start + n_leg * fw_leg_check
+check("leg edge: fingers end exactly at TL arc_start", leg_fingers_end, leg_zone_end)
+check_true("leg edge: no finger extends past arc tangent point",
+           abs(leg_fingers_end - leg_zone_end) < 1e-6,
+           f"overshoot={leg_fingers_end - leg_zone_end:.6f}mm")
+if failed == 0:
     print("ALL PASS — finger joint geometry is correct.")
 else:
     print("FAILURES DETECTED — review finger joint formulas before proceeding.")
-h.exit()
+sys.exit(0 if failed == 0 else 1)

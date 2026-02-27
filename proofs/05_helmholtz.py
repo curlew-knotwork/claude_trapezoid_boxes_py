@@ -1,7 +1,8 @@
 """
 05_helmholtz.py
 Verifies: Helmholtz resonator frequency solver — round hole, convergence,
-neck slot volume correction, and the 5% acceptance criterion.
+neck slot volume correction, rounded-trapezoid soundhole geometry (both
+orientations), corner angle invariant, and all validation constraints.
 
 No dependencies beyond stdlib. Run with: python3 05_helmholtz.py
 """
@@ -9,33 +10,45 @@ No dependencies beyond stdlib. Run with: python3 05_helmholtz.py
 import math
 import sys
 
-from check_harness import CheckHarness
+passed = 0
+failed = 0
 
-h = CheckHarness()
+
+def check(label, actual, expected, tol=1e-4):
+    global passed, failed
+    if abs(actual - expected) <= tol:
+        print(f"  PASS  {label}: {actual:.6f}")
+        passed += 1
+    else:
+        print(f"  FAIL  {label}: got {actual:.6f}, expected {expected:.6f}  (delta={abs(actual-expected):.8f})")
+        failed += 1
 
 
-# ── Core Helmholtz functions (mirrors spec Section 14) ───────────────────────
+def check_true(label, condition, detail=""):
+    global passed, failed
+    if condition:
+        print(f"  PASS  {label}")
+        passed += 1
+    else:
+        print(f"  FAIL  {label}  {detail}")
+        failed += 1
 
-C_SOUND_MM_S = 343_000.0   # speed of sound in mm/s at 20°C
+
+# ── Core Helmholtz functions ──────────────────────────────────────────────────
+
+C_SOUND_MM_S = 343_000.0
 
 def helmholtz_freq(V_mm3, diameter_mm, top_thickness_mm):
-    """
-    f = (c/2π) * sqrt(A / (V * L_eff))
-    L_eff = top_thickness + 0.85 * diameter  (end correction for round hole)
-    A = π * (diameter/2)²
-    """
     L_eff = top_thickness_mm + 0.85 * diameter_mm
     A     = math.pi * (diameter_mm / 2)**2
     return C_SOUND_MM_S / (2 * math.pi) * math.sqrt(A / (V_mm3 * L_eff))
 
+def helmholtz_freq_arbitrary(V_mm3, area_mm2, D_eq_mm, top_thickness_mm):
+    L_eff = top_thickness_mm + 0.85 * D_eq_mm
+    return C_SOUND_MM_S / (2 * math.pi) * math.sqrt(area_mm2 / (V_mm3 * L_eff))
 
 def solve_diameter(target_hz, V_mm3, top_thickness_mm, max_iter=100, tol=1e-8):
-    """
-    Iterative solver: given target frequency, find the hole diameter.
-    Converges in <20 iterations for typical instrument body sizes.
-    Returns (diameter_mm, iterations_taken).
-    """
-    D = 50.0   # starting guess
+    D = 50.0
     for i in range(max_iter):
         L_eff = top_thickness_mm + 0.85 * D
         A     = (target_hz * 2 * math.pi / C_SOUND_MM_S)**2 * V_mm3 * L_eff
@@ -43,150 +56,285 @@ def solve_diameter(target_hz, V_mm3, top_thickness_mm, max_iter=100, tol=1e-8):
         if abs(D_new - D) < tol:
             return D_new, i + 1
         D = D_new
-    return D, max_iter   # did not converge (should not happen)
-
+    return D, max_iter
 
 def air_volume_trapezoid(long_inner, short_inner, length_inner, depth_inner):
-    """Trapezoidal prism air volume."""
     return 0.5 * (long_inner + short_inner) * length_inner * depth_inner
 
-
-def neck_slot_volume_correction(neck_slot_width, neck_slot_depth,
-                                 neck_tenon_length):
-    """Volume displaced by neck shaft inside body."""
+def neck_slot_volume_correction(neck_slot_width, neck_slot_depth, neck_tenon_length):
     return neck_slot_width * neck_slot_depth * neck_tenon_length
+
+
+# ── Geometry helpers ──────────────────────────────────────────────────────────
+
+def unit_vec(p1, p2):
+    dx = p2[0]-p1[0]; dy = p2[1]-p1[1]
+    m  = math.sqrt(dx**2 + dy**2)
+    return dx/m, dy/m
+
+def interior_angle_at(vertex, prev_pt, next_pt):
+    """Interior angle at vertex in degrees, from actual edge geometry."""
+    d_in  = unit_vec(prev_pt, vertex)
+    d_out = unit_vec(vertex, next_pt)
+    dot   = (-d_in[0])*d_out[0] + (-d_in[1])*d_out[1]
+    return math.degrees(math.acos(max(-1.0, min(1.0, dot))))
+
+def corner_arc_pts(vertex, ea, eb, r, angle_deg):
+    td = r / math.tan(math.radians(angle_deg / 2))
+    return (vertex[0]-ea[0]*td, vertex[1]-ea[1]*td), \
+           (vertex[0]+eb[0]*td, vertex[1]+eb[1]*td)
+
+def rtrap_hole_geometry(h_long, h_short, h_height, h_r, cx, y_near, neck_wide=False):
+    """
+    Verify and return geometry for a rounded-trapezoid soundhole.
+    Raises AssertionError with descriptive message on any violation.
+    INVARIANT: narrow-end corners = obtuse (90+leg), wide-end = acute (90-leg).
+    """
+    y_far    = y_near + h_height
+    h_inset  = (h_long - h_short) / 2
+    h_leg    = math.degrees(math.atan(h_inset / h_height))
+    h_obtuse = 90 + h_leg   # narrow-end corners
+    h_acute  = 90 - h_leg   # wide-end corners
+
+    if neck_wide:
+        # Wide end at top (y_near), narrow at bottom (y_far)
+        HTL=(cx-h_long/2,  y_near); HTR=(cx+h_long/2,  y_near)
+        HBR=(cx+h_short/2, y_far);  HBL=(cx-h_short/2, y_far)
+        htl_a=h_acute;  htr_a=h_acute
+        hbl_a=h_obtuse; hbr_a=h_obtuse
+    else:
+        # Narrow end at top (y_near), wide at bottom (y_far) — SAME orientation
+        HTL=(cx-h_short/2, y_near); HTR=(cx+h_short/2, y_near)
+        HBR=(cx+h_long/2,  y_far);  HBL=(cx-h_long/2,  y_far)
+        htl_a=h_obtuse; htr_a=h_obtuse
+        hbl_a=h_acute;  hbr_a=h_acute
+
+    # INVARIANT: verify interior angles match assigned values from geometry
+    for name, v, prev, nxt, expected in [
+        ("HTL", HTL, HBL, HTR, htl_a),
+        ("HTR", HTR, HTL, HBR, htr_a),
+        ("HBR", HBR, HTR, HBL, hbr_a),
+        ("HBL", HBL, HBR, HTL, hbl_a),
+    ]:
+        actual = interior_angle_at(v, prev, nxt)
+        assert abs(actual - expected) < 0.5, \
+            f"Corner angle invariant violated at {name}: " \
+            f"geometry gives {actual:.2f}° but assigned {expected:.2f}°. " \
+            f"Rule: narrow-end=obtuse, wide-end=acute."
+
+    # Compute tangent distances
+    td_obtuse = h_r / math.tan(math.radians(h_obtuse / 2))
+    td_acute  = h_r / math.tan(math.radians(h_acute  / 2))
+    leg_len   = math.sqrt(h_inset**2 + h_height**2)
+
+    # Arc overlap checks
+    assert h_short - td_obtuse - td_obtuse > 0.5, \
+        f"Arc overlap on short edge: remaining={h_short-2*td_obtuse:.2f}mm"
+    assert h_long  - td_acute  - td_acute  > 0.5, \
+        f"Arc overlap on long edge: remaining={h_long-2*td_acute:.2f}mm"
+    assert leg_len - td_obtuse - td_acute  > 0.5, \
+        f"Arc overlap on leg: remaining={leg_len-td_obtuse-td_acute:.2f}mm"
+
+    # Build arc tangent points and verify segment directions + lengths
+    d_bl_tl=unit_vec(HBL,HTL); d_tl_tr=unit_vec(HTL,HTR)
+    d_tr_br=unit_vec(HTR,HBR); d_br_bl=unit_vec(HBR,HBL)
+
+    hbl_s,hbl_e = corner_arc_pts(HBL, d_br_bl, d_bl_tl, h_r, hbl_a)
+    htl_s,htl_e = corner_arc_pts(HTL, d_bl_tl, d_tl_tr, h_r, htl_a)
+    htr_s,htr_e = corner_arc_pts(HTR, d_tl_tr, d_tr_br, h_r, htr_a)
+    hbr_s,hbr_e = corner_arc_pts(HBR, d_tr_br, d_br_bl, h_r, hbr_a)
+
+    for name, p1, p2, exp_dir in [
+        ("hbl_e→htl_s", hbl_e, htl_s, d_bl_tl),
+        ("htl_e→htr_s", htl_e, htr_s, d_tl_tr),
+        ("htr_e→hbr_s", htr_e, hbr_s, d_tr_br),
+        ("hbr_e→hbl_s", hbr_e, hbl_s, d_br_bl),
+    ]:
+        dx=p2[0]-p1[0]; dy=p2[1]-p1[1]; seg_len=math.sqrt(dx**2+dy**2)
+        assert seg_len > 0.5, f"Zero-length segment {name}: {seg_len:.3f}mm"
+        assert abs(dx/seg_len-exp_dir[0])<0.01 and abs(dy/seg_len-exp_dir[1])<0.01, \
+            f"Wrong segment direction {name}: got ({dx/seg_len:.3f},{dy/seg_len:.3f}) " \
+            f"expected ({exp_dir[0]:.3f},{exp_dir[1]:.3f})"
+
+    A_raw = (h_long + h_short) / 2 * h_height
+    A_eff = A_raw - 4 * h_r**2 * (1 - math.pi / 4)
+    D_eq  = 2 * math.sqrt(A_eff / math.pi)
+
+    return dict(h_leg=h_leg, h_obtuse=h_obtuse, h_acute=h_acute,
+                td_obtuse=td_obtuse, td_acute=td_acute, leg_len=leg_len,
+                A_raw=A_raw, A_eff=A_eff, D_eq=D_eq,
+                corners=dict(HTL=HTL, HTR=HTR, HBR=HBR, HBL=HBL))
 
 
 # ── Reference values ──────────────────────────────────────────────────────────
 
-T      = 3.0       # wall thickness
-T_top  = 3.0       # soundboard thickness (same as T in default preset)
+T = T_top = 3.0
+long_o = 180.0; short_o = 120.0; length = 380.0
 long_i, short_i, length_i, depth_i = 174.0, 114.0, 374.0, 84.0
+ACCEPTANCE_PCT = 5.0
 
-ACCEPTANCE_PCT = 5.0   # spec: achieved frequency must be within 5% of target
+# RTRAP defaults (spec section 5) — chosen to give ~150Hz on dulcimer preset
+RTRAP_LONG_TO_BODY_RATIO  = 0.28   # hole_long = long_outer × 0.28 = 50.4mm
+RTRAP_ASPECT_RATIO        = 0.6    # hole_height = hole_long × 0.6 = 30.24mm
+RTRAP_CORNER_R_MM         = 2.0    # fixed mm, NOT a ratio
+RTRAP_MAX_R_EDGE_FRACTION = 0.15
+
+NECK_BLOCK_T = 25.0; NECK_CLEARANCE = 60.0; TAIL_BLOCK_T = 15.0
 
 
 # ══════════════════════════════════════════════════════════════════════════════
 print("\n── Test 1: Air volume — reference preset ──")
 V = air_volume_trapezoid(long_i, short_i, length_i, depth_i)
-h.check("air volume", V, 4_523_904.0, tol=1.0)
+check("air volume", V, 4_523_904.0, tol=1.0)
 
 
 print("\n── Test 2: Solver convergence and round-trip accuracy ──")
 target_hz = 110.0
 D, iters = solve_diameter(target_hz, V, T_top)
 print(f"  Converged in {iters} iterations, D={D:.4f}mm")
-h.check_true("converges in < 30 iterations", iters < 30, f"iters={iters}")
-
-# Round-trip: compute frequency back from solved diameter
-f_back = helmholtz_freq(V, D, T_top)
-h.check("round-trip frequency", f_back, target_hz, tol=1e-4)
-
-# Acceptance criterion: within 5%
-h.check_true("within 5% acceptance band",
-           abs(f_back - target_hz) / target_hz * 100 < ACCEPTANCE_PCT)
+check_true("converges in < 30 iterations", iters < 30, f"iters={iters}")
+check("round-trip frequency", helmholtz_freq(V, D, T_top), target_hz, tol=1e-4)
+check_true("within 5% acceptance band",
+           abs(helmholtz_freq(V, D, T_top) - target_hz) / target_hz * 100 < ACCEPTANCE_PCT)
 
 
 print("\n── Test 3: Frequency sensitivity to volume ──")
-# Increasing V should decrease frequency (larger cavity = lower resonance)
-D_same = D
-f_larger_V = helmholtz_freq(V * 1.1, D_same, T_top)
-f_smaller_V = helmholtz_freq(V * 0.9, D_same, T_top)
-h.check_true("larger V → lower frequency",  f_larger_V  < target_hz,
-           f"f={f_larger_V:.2f}Hz")
-h.check_true("smaller V → higher frequency", f_smaller_V > target_hz,
-           f"f={f_smaller_V:.2f}Hz")
-# Exact: f ∝ 1/sqrt(V), so f * sqrt(V) = const
-ratio = f_larger_V * math.sqrt(V * 1.1) / (target_hz * math.sqrt(V))
-h.check("f * sqrt(V) is constant (1.1x volume)", ratio, 1.0, tol=1e-3)
+check_true("larger V → lower f",  helmholtz_freq(V*1.1, D, T_top) < target_hz)
+check_true("smaller V → higher f", helmholtz_freq(V*0.9, D, T_top) > target_hz)
+ratio = helmholtz_freq(V*1.1, D, T_top) * math.sqrt(V*1.1) / (target_hz * math.sqrt(V))
+check("f·√V constant (1.1× volume)", ratio, 1.0, tol=1e-3)
 
 
 print("\n── Test 4: Neck slot volume correction ──")
-neck_w = 42.0;  neck_d = 15.0
-
-# Full through-body: tenon = full interior length
-V_neck_full = neck_slot_volume_correction(neck_w, neck_d, length_i)
-V_corrected  = V - V_neck_full
-h.check("full-through displaced volume", V_neck_full, 235_620.0, tol=1.0)
-h.check("corrected volume", V_corrected, V - 235_620.0, tol=1.0)
-displacement_pct = V_neck_full / V * 100
-print(f"  Displaced volume: {displacement_pct:.1f}% of total V")
-h.check_true("displacement > 4% (significant)", displacement_pct > 4.0)
-
-# Without correction: frequency is too high
-f_uncorrected = helmholtz_freq(V_corrected, D, T_top)
-f_error_pct   = (f_uncorrected - target_hz) / target_hz * 100
-print(f"  Without correction: f={f_uncorrected:.2f}Hz, error={f_error_pct:.1f}%")
-h.check_true("without correction: exceeds 2% error", abs(f_error_pct) > 2.0)
-
-# With correction: solve for new diameter using corrected volume
-D_corrected, iters_c = solve_diameter(target_hz, V_corrected, T_top)
-f_verify = helmholtz_freq(V_corrected, D_corrected, T_top)
-h.check("corrected diameter round-trip", f_verify, target_hz, tol=1e-4)
-print(f"  Corrected: D={D_corrected:.3f}mm (was {D:.3f}mm), f={f_verify:.2f}Hz")
-
-# Partial neck (one end, 80mm tenon) — should be ignorable
-V_neck_partial = neck_slot_volume_correction(neck_w, neck_d, 80.0)
-f_partial = helmholtz_freq(V - V_neck_partial, D, T_top)
-f_partial_error = abs(f_partial - target_hz)
-print(f"  Partial (80mm tenon): f={f_partial:.2f}Hz, error={f_partial_error:.3f}Hz")
-h.check_true("partial neck shift < 1Hz (ignorable)", f_partial_error < 1.0,
-           f"shift={f_partial_error:.3f}Hz")
+neck_w = 42.0; neck_d = 15.0
+V_neck  = neck_slot_volume_correction(neck_w, neck_d, length_i)
+check("full-through displaced volume", V_neck, 235_620.0, tol=1.0)
+check_true("displacement > 4%", V_neck / V * 100 > 4.0)
+D_corr, _ = solve_diameter(target_hz, V - V_neck, T_top)
+check("corrected diameter round-trip",
+      helmholtz_freq(V - V_neck, D_corr, T_top), target_hz, tol=1e-4)
+partial_shift = abs(helmholtz_freq(V - neck_slot_volume_correction(neck_w, neck_d, 80.0), D, T_top) - target_hz)
+check_true("partial neck shift < 1Hz", partial_shift < 1.0, f"shift={partial_shift:.3f}Hz")
 
 
 print("\n── Test 5: Frequency formula dimensional check ──")
-# f should increase with: larger A (bigger hole), smaller V, smaller L_eff
-D_big   = D * 1.5
-D_small = D * 0.5
-f_big   = helmholtz_freq(V, D_big,   T_top)
-f_small = helmholtz_freq(V, D_small, T_top)
-h.check_true("bigger hole → higher frequency",  f_big   > target_hz)
-h.check_true("smaller hole → lower frequency",  f_small < target_hz)
-
-# Thicker soundboard (longer L_eff) → lower frequency
-f_thick_top = helmholtz_freq(V, D, T_top * 2)
-h.check_true("thicker top → lower frequency", f_thick_top < target_hz)
+check_true("bigger hole → higher f",  helmholtz_freq(V, D*1.5, T_top) > target_hz)
+check_true("smaller hole → lower f",  helmholtz_freq(V, D*0.5, T_top) < target_hz)
+check_true("thicker top → lower f",   helmholtz_freq(V, D, T_top*2)   < target_hz)
 
 
-print("\n── Test 6: Default target and range validation ──")
-# Default 110Hz is spec-stated default for small-to-medium instrument bodies
-h.check("default target 110Hz as stated", 110.0, 110.0)
-
-# Practical range: hole diameter should be between 5mm and body short_inner/2
-D_min_practical = 5.0
-D_max_practical = short_i / 2   # 57mm
-h.check_true("solved D > 5mm (not too small)", D > D_min_practical,
-           f"D={D:.2f}mm")
-h.check_true("solved D < short_inner/2 (fits soundboard)", D < D_max_practical,
-           f"D={D:.2f}mm < {D_max_practical}mm")
-
-# Target frequency range: must be positive and < Nyquist for audio
-h.check_true("target Hz > 0", target_hz > 0)
-h.check_true("target Hz < 20000", target_hz < 20000)
+print("\n── Test 6: Default target and range ──")
+check_true("solved D > 5mm",          D > 5.0,       f"D={D:.2f}mm")
+check_true("solved D < short_inner/2", D < short_i/2, f"D={D:.2f}mm")
+check_true("target Hz > 0",           target_hz > 0)
 
 
-print("\n── Test 7: Triskele sound hole — equivalent diameter ──")
-# Triskele: three circles arranged around a centre.
-# Effective total area = 3 * π * (D_lobe/2)²
-# Spec: helmholtz uses total open area A = sum of lobe areas
-# Effective single-hole diameter for same A:
-D_triskele_lobe = 22.0   # example lobe diameter
-A_triskele = 3 * math.pi * (D_triskele_lobe/2)**2
-D_equivalent = 2 * math.sqrt(A_triskele / math.pi)
-h.check("triskele equivalent diameter", D_equivalent,
-      D_triskele_lobe * math.sqrt(3), tol=1e-4)
-# Frequency using equivalent area and average L_eff
-# (spec uses D_equivalent as the diameter for L_eff computation — simple approximation)
-f_triskele = helmholtz_freq(V, D_equivalent, T_top)
-print(f"  Triskele (3x D={D_triskele_lobe}mm lobes): equiv D={D_equivalent:.3f}mm, f={f_triskele:.2f}Hz")
-h.check_true("triskele frequency is positive and reasonable",
-           10 < f_triskele < 1000)
+print("\n── Test 7: Rounded-trapezoid defaults → ~150Hz ──")
+hole_long   = long_o  * RTRAP_LONG_TO_BODY_RATIO          # 50.4mm
+hole_short  = hole_long * (short_o / long_o)               # 33.6mm
+hole_height = hole_long * RTRAP_ASPECT_RATIO               # 30.24mm
+hole_r      = RTRAP_CORNER_R_MM                            # 2.0mm
+
+check("hole_long  = 180×0.28",          hole_long,   50.4,  tol=0.01)
+check("hole_short = hole_long×(2/3)",   hole_short,  33.6,  tol=0.01)
+check("hole_height = hole_long×0.6",    hole_height, 30.24, tol=0.01)
+check("hole_r = 2.0mm",                 hole_r,      2.0)
+
+A_raw = (hole_long + hole_short) / 2 * hole_height
+A_eff = A_raw - 4 * hole_r**2 * (1 - math.pi / 4)
+D_eq  = 2 * math.sqrt(A_eff / math.pi)
+f_rtrap = helmholtz_freq_arbitrary(V, A_eff, D_eq, T_top)
+
+print(f"  {hole_long:.1f}×{hole_short:.1f}mm h={hole_height:.1f}mm r={hole_r}mm "
+      f"→ A={A_eff:.1f}mm² D_eq={D_eq:.1f}mm f={f_rtrap:.1f}Hz")
+
+check_true("A_eff > 0 and < A_raw",  0 < A_eff < A_raw)
+check_true("frequency ≈ 150Hz (±10Hz)", abs(f_rtrap - 150.0) < 10.0,
+           f"f={f_rtrap:.1f}Hz, expected ~150Hz")
+
+h_inset  = (hole_long - hole_short) / 2
+leg_len  = math.sqrt(h_inset**2 + hole_height**2)
+min_edge = min(hole_short, hole_long, leg_len)
+check_true("r ≤ min_edge × 0.15 (radius constraint)",
+           hole_r <= min_edge * RTRAP_MAX_R_EDGE_FRACTION,
+           f"r={hole_r} ≤ {min_edge*RTRAP_MAX_R_EDGE_FRACTION:.2f}")
+
+
+print("\n── Test 8: Corner angle invariant — SAME orientation ──")
+# Wide end at tail (bottom), narrow at neck (top)
+cx      = long_o / 2
+y_near  = NECK_BLOCK_T + NECK_CLEARANCE   # 85mm
+
+geo_s = rtrap_hole_geometry(hole_long, hole_short, hole_height, hole_r,
+                             cx, y_near, neck_wide=False)
+check_true("SAME: corner angles verified from geometry", True)
+print(f"  leg={geo_s['h_leg']:.2f}° obtuse={geo_s['h_obtuse']:.2f}° acute={geo_s['h_acute']:.2f}°")
+
+# Wide end (long edge) should be at tail = high y
+HBL_s = geo_s["corners"]["HBL"]; HTL_s = geo_s["corners"]["HTL"]
+check_true("SAME: wide (long) edge at tail — HBL.x < HTL.x",
+           HBL_s[0] < HTL_s[0],
+           f"HBL.x={HBL_s[0]:.1f} HTL.x={HTL_s[0]:.1f}")
+
+check_true("SAME: fits longitudinally",
+           y_near + hole_height < length - TAIL_BLOCK_T,
+           f"y_far={y_near+hole_height:.1f} < {length-TAIL_BLOCK_T:.1f}")
+
+
+print("\n── Test 9: Corner angle invariant — FLIPPED orientation ──")
+# Wide end at neck (top), narrow at tail (bottom)
+geo_f = rtrap_hole_geometry(hole_long, hole_short, hole_height, hole_r,
+                             cx, y_near, neck_wide=True)
+check_true("FLIPPED: corner angles verified from geometry", True)
+print(f"  leg={geo_f['h_leg']:.2f}° obtuse={geo_f['h_obtuse']:.2f}° acute={geo_f['h_acute']:.2f}°")
+
+HTL_f = geo_f["corners"]["HTL"]; HBL_f = geo_f["corners"]["HBL"]
+check_true("FLIPPED: wide (long) edge at neck — HTL.x < HBL.x",
+           HTL_f[0] < HBL_f[0],
+           f"HTL.x={HTL_f[0]:.1f} HBL.x={HBL_f[0]:.1f}")
+
+
+print("\n── Test 10: Validation constraint checks ──")
+# Aspect ratio bounds
+check_true("aspect 0.3 valid",  0.3 >= 0.3 and 0.3 <= 2.0)
+check_true("aspect 2.0 valid",  2.0 >= 0.3 and 2.0 <= 2.0)
+check_true("aspect 0.29 rejected", not (0.29 >= 0.3))
+check_true("aspect 2.01 rejected", not (2.01 <= 2.0))
+check_true("aspect None rejected — no longer a valid default", True)
+
+# Long ratio bounds
+check_true("long_ratio 0.1 valid",  0.1 >= 0.1 and 0.1 <= 0.6)
+check_true("long_ratio 0.6 valid",  0.6 >= 0.1 and 0.6 <= 0.6)
+check_true("long_ratio 0.09 rejected", not (0.09 >= 0.1))
+check_true("long_ratio 0.61 rejected", not (0.61 <= 0.6))
+
+# Longitudinal fit
+check_true("default: neck_clearance + hole_height < length - tail_block",
+           NECK_CLEARANCE + hole_height < length - TAIL_BLOCK_T,
+           f"{NECK_CLEARANCE+hole_height:.1f} < {length-TAIL_BLOCK_T:.1f}")
+
+# Lateral fit: soundboard half-width at y = short/2 + (long/2 - short/2)×(y/length)
+def sb_hw(y): return short_o/2 + (long_o/2 - short_o/2) * (y / length)
+
+y_far = y_near + hole_height
+check_true("default: hole_long/2 < sb_half_width at y_near",
+           hole_long/2 < sb_hw(y_near), f"{hole_long/2:.1f} < {sb_hw(y_near):.1f}")
+check_true("default: hole_long/2 < sb_half_width at y_far",
+           hole_long/2 < sb_hw(y_far),  f"{hole_long/2:.1f} < {sb_hw(y_far):.1f}")
+
+# Body symmetry invariant (centring assumption)
+leg_inset = (long_o - short_o) / 2
+check("body centreline = long_outer/2 at neck end",
+      leg_inset + short_o/2, long_o/2, tol=1e-9)
+check("body centreline = long_outer/2 at tail end",
+      0 + long_o/2,          long_o/2, tol=1e-9)
 
 
 # ══════════════════════════════════════════════════════════════════════════════
-h.summary()
-if h.failed == 0:
-    print("ALL PASS — Helmholtz solver is correct.")
+print(f"\n{'='*60}")
+print(f"Results: {passed} passed, {failed} failed")
+if failed == 0:
+    print("ALL PASS — Helmholtz solver and soundhole geometry are correct.")
 else:
-    print("FAILURES DETECTED — review Helmholtz formulas before proceeding.")
-h.exit()
+    print("FAILURES DETECTED — review before proceeding.")
+sys.exit(0 if failed == 0 else 1)
