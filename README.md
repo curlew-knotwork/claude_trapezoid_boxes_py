@@ -3,6 +3,7 @@
 Parametric laser-cut box generator for:
 - generic: trapezoidal boxes, or
 - special case: trapezoidal music instrument bodies (stringed instruments, drums, etc.).
+- Cutting a trapezoid shaped base box with a laser cutter that operates orthogonally to the laser bed involves compromises: underfills (air gaps) or overfills and hand woodwork (eg sanding, beveling). This is due to the limitations of working with 90 degree cutting angle (to the laser bed). 
 
 Note: This project is an experiment in collaborating with Claude Code to
 see if it can be made to generate good, correct code, on the first try by
