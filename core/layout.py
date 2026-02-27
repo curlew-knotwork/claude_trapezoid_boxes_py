@@ -4,11 +4,11 @@ Simple, deterministic, well-understood.
 """
 
 from __future__ import annotations
-import dataclasses
 
 from constants import PANEL_GAP_MM
 from core.models import Panel, PanelType, Point
 from core import reporter
+from core.transform import rotate_panel_90cw
 
 
 def layout_panels(
@@ -19,7 +19,7 @@ def layout_panels(
     """Pack panels onto sheets using NFDH algorithm.
 
     Returns (Panel, origin: Point, sheet_index) triples.
-    Panel objects are never mutated — dataclasses.replace() used for rotation.
+    Panel objects are never mutated — rotate_panel_90cw() used for rotation.
 
     Grain direction constraint: BASE and SOUNDBOARD never rotated.
     TEST_STRIP always on last sheet.
@@ -56,12 +56,7 @@ def layout_panels(
         if panel.type not in FIXED_GRAIN:
             w_r, h_r = h, w
             if x + w_r + PANEL_GAP_MM <= sheet_width + PANEL_GAP_MM:
-                rotated = dataclasses.replace(
-                    panel,
-                    width=w_r,
-                    height=h_r,
-                    grain_angle_deg=panel.grain_angle_deg + 90.0,
-                )
+                rotated = rotate_panel_90cw(panel)
                 return rotated, x, y
 
         return None

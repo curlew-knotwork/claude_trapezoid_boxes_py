@@ -173,6 +173,8 @@ def build_config(args: argparse.Namespace) -> InstrumentConfig:
         inst_vals["braces"] = True
     if getattr(args, "kerfing", None) is not None:
         inst_vals["kerfing"] = args.kerfing
+    if getattr(args, "display_stroke", None) is not None:
+        vals["display_stroke_mm"] = args.display_stroke
 
     thickness = vals["thickness"]
     top_t  = inst_vals["top_thickness"] or thickness
@@ -204,6 +206,7 @@ def build_config(args: argparse.Namespace) -> InstrumentConfig:
         colorblind=vals.get("colorblind", False),
         json_errors=vals.get("json_errors", False),
         output=vals.get("output", "trapezoid_box_output.svg"),
+        display_stroke_mm=vals.get("display_stroke_mm", 0.0),
     )
 
     return InstrumentConfig(

@@ -195,50 +195,42 @@ def _fhole_area(L_fh: float) -> float:
 
 
 def _make_fhole_shape(x: float, y_centre: float, L_fh: float) -> ClosedHole:
-    """Build a single f-hole ClosedHole path."""
+    """Build a single f-hole as one continuous closed outline.
+
+    CW traversal: top-of-upper-eye → right side of upper eye → right shaft wall
+    → large CW arc around lower eye → left shaft wall → left side of upper eye → close.
+
+    CW arcs are used throughout so the outline traces the exterior of the shape.
+    Shaft width = FHOLE_WAIST_RATIO × upper eye diameter.
+    """
     y_top = y_centre - L_fh / 2
-    y_bot = y_centre + L_fh / 2
+    uy    = y_top + FHOLE_UPPER_EYE_Y_RATIO * L_fh
+    ur    = FHOLE_UPPER_EYE_D_RATIO * L_fh / 2
+    ly    = y_top + FHOLE_LOWER_EYE_Y_RATIO * L_fh
+    lr    = FHOLE_LOWER_EYE_D_RATIO * L_fh / 2
 
-    # Upper eye circle (approximated as arc segments)
-    uy = y_top + FHOLE_UPPER_EYE_Y_RATIO * L_fh
-    ur = FHOLE_UPPER_EYE_D_RATIO * L_fh / 2
-    # Lower eye circle
-    ly = y_top + FHOLE_LOWER_EYE_Y_RATIO * L_fh
-    lr = FHOLE_LOWER_EYE_D_RATIO * L_fh / 2
+    shaft_half_w = min(FHOLE_WAIST_RATIO * ur, ur * 0.95, lr * 0.95)
 
-    # Build a simple approximation: upper eye arc + shaft bezier + lower eye arc
-    # Upper eye: full circle = two semicircles
-    ue_left  = Point(x - ur, uy)
-    ue_right = Point(x + ur, uy)
-    ue_top   = Point(x, uy - ur)
-    ue_bot   = Point(x, uy + ur)
+    # Vertical clearance at junction circles
+    ur_gap = math.sqrt(max(0.0, ur**2 - shaft_half_w**2))
+    lr_gap = math.sqrt(max(0.0, lr**2 - shaft_half_w**2))
 
-    # Lower eye: full circle = two semicircles
-    le_left  = Point(x - lr, ly)
-    le_right = Point(x + lr, ly)
-    le_top   = Point(x, ly - lr)
-    le_bot   = Point(x, ly + lr)
+    ue_t     = Point(x,                 uy - ur)      # top of upper eye
+    ue_r_jct = Point(x + shaft_half_w,  uy + ur_gap)  # upper eye, right shaft junction
+    ue_l_jct = Point(x - shaft_half_w,  uy + ur_gap)  # upper eye, left shaft junction
+    le_r_jct = Point(x + shaft_half_w,  ly - lr_gap)  # lower eye, right shaft junction
+    le_l_jct = Point(x - shaft_half_w,  ly - lr_gap)  # lower eye, left shaft junction
 
-    # Simple f-hole outline: upper eye (CCW for hole) → shaft → lower eye
-    # Build as two half-circles for each eye connected by shaft sides
-    segs: list = [
-        Arc(ue_top, ue_bot, ur, False, False),  # left half upper eye (CCW)
-        Arc(ue_bot, ue_top, ur, False, False),  # right half upper eye (CCW)
-        # Shaft and lower eye — simplified single CubicBezier connecting to lower eye
-        CubicBezier(ue_bot, Point(x + ur, (uy + ly)/2),
-                    Point(x + lr, (uy + ly)/2), le_top),
-        Arc(le_top, le_bot, lr, False, False),
-        Arc(le_bot, le_top, lr, False, False),
-        CubicBezier(le_top, Point(x - lr, (uy + ly)/2),
-                    Point(x - ur, (uy + ly)/2), ue_bot),
+    # Both eye junctions are in the upper half of the lower eye circle → large arc
+    # (goes CW from upper-right, down right side, around bottom, up left side)
+    segs = [
+        Arc(ue_t,     ue_r_jct, ur, False, True),  # CW: top → right junction (upper eye)
+        Line(ue_r_jct, le_r_jct),                   # right shaft wall
+        Arc(le_r_jct, le_l_jct, lr, True,  True),  # CW large arc around lower eye
+        Line(le_l_jct, ue_l_jct),                   # left shaft wall
+        Arc(ue_l_jct, ue_t,     ur, False, True),  # CW: left junction → top (upper eye)
     ]
-    # Build a simple closed shape: just upper + lower circles connected
-    # Construct as a proper ClosedPath
-    path = ClosedPath(tuple([
-        Arc(ue_top, ue_bot, ur, False, False),
-        Arc(ue_bot, ue_top, ur, False, False),
-    ]))
-    return ClosedHole(path=path)
+    return ClosedHole(path=ClosedPath(tuple(segs)))
 
 
 # ── Rounded-trapezoid hole ─────────────────────────────────────────────────────
@@ -352,8 +344,9 @@ def _build_rtrap_path(h_long: float, h_short: float, h_height: float,
         td = r / math.tan(math.radians(angle_deg / 2))
         arc_s = Point(vertex.x - arr.x * td, vertex.y - arr.y * td)
         arc_e = Point(vertex.x + dep.x * td, vertex.y + dep.y * td)
-        # Hole arcs: CCW (sweep=0 in SVG) to get CCW winding
-        arc = Arc(arc_s, arc_e, r, False, False)
+        # CW arc: center inside hole, bows toward corner vertex — correct rounding.
+        # CCW arc (False,False) bows toward hole center = biscuit at corner.
+        arc = Arc(arc_s, arc_e, r, False, True)
         return arc_s, arc, arc_e
 
     a_TL = arc_at(HTL, d_bl_tl, d_tl_tr, angle_TL)

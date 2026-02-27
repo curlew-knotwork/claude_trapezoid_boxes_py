@@ -49,10 +49,14 @@ def add_common_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--per-panel",     action="store_true", default=None)
     parser.add_argument("--preset",        type=str, default=None)
     parser.add_argument("--list-presets",  action="store_true", default=None)
-    parser.add_argument("--output",        type=str, default=None)
-    parser.add_argument("--config",        type=str, default=None, dest="config_file")
-    parser.add_argument("--save-config",   type=str, default=None)
-    parser.add_argument("--extract-config",type=str, default=None)
+    parser.add_argument("--output",           type=str,   default=None)
+    parser.add_argument("--config",           type=str,   default=None, dest="config_file")
+    parser.add_argument("--save-config",      type=str,   default=None)
+    parser.add_argument("--extract-config",   type=str,   default=None)
+    parser.add_argument("--display-stroke",   type=float, default=None,
+                        metavar="MM",
+                        help="Stroke width for cut paths (default 0.001mm hairline). "
+                             "Use e.g. 0.3 for human-viewable output.")
 
 
 def add_box_args(parser: argparse.ArgumentParser) -> None:
@@ -71,6 +75,7 @@ def _defaults() -> dict:
         "sheet_width": DEFAULT_SHEET_WIDTH_MM, "sheet_height": DEFAULT_SHEET_HEIGHT_MM,
         "labels": True, "dim_mode": DimMode.OUTER, "colorblind": False,
         "json_errors": False, "output": "trapezoid_box_output.svg",
+        "display_stroke_mm": 0.0,
     }
 
 
@@ -133,6 +138,8 @@ def build_config(args: argparse.Namespace) -> BoxConfig:
         vals["json_errors"] = True
     if getattr(args, "labels", None) is not None:
         vals["labels"] = args.labels
+    if getattr(args, "display_stroke", None) is not None:
+        vals["display_stroke_mm"] = args.display_stroke
 
     if getattr(args, "lid", None) is not None:
         lid_type = LidType(args.lid)
@@ -157,6 +164,7 @@ def build_config(args: argparse.Namespace) -> BoxConfig:
         colorblind=vals["colorblind"],
         json_errors=vals["json_errors"],
         output=vals["output"],
+        display_stroke_mm=vals.get("display_stroke_mm", 0.0),
     )
     return BoxConfig(common=common, lid=lid_type, hinge_diameter=hinge_diam)
 

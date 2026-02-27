@@ -50,6 +50,7 @@ SVG_LABEL_COLOUR            = (0, 0, 0)
 SVG_CB_CUT_COLOUR           = (0, 0, 0)      # colorblind mode: cut = solid black
 SVG_CB_SCORE_COLOUR         = (0, 0, 0)      # colorblind mode: score = dashed black
 SVG_HAIRLINE_MM             = 0.001          # Epilog-compatible hairline
+SVG_DISPLAY_STROKE_MM       = 0.0            # 0 = use hairline; >0 overrides for human-viewable output
 SVG_LABEL_STROKE_MM         = 0.2
 SVG_SCORE_DASH_MM           = 5.0
 SVG_SCORE_GAP_MM            = 2.0

@@ -3,11 +3,13 @@ core/transform.py — Pure coordinate transforms. No geometry creation.
 """
 
 from __future__ import annotations
+import dataclasses
 import math
 
 from core.models import (
     Point, Line, Arc, CubicBezier, ClosedPath, PathSegment,
     _segment_start, _segment_end,
+    Panel, Mark, CircleHole, ClosedHole,
 )
 from core.utils import rotate_point
 
@@ -78,3 +80,53 @@ def reverse_path(path: ClosedPath) -> ClosedPath:
 
     reversed_segs = tuple(flip_seg(s) for s in reversed(path.segments))
     return ClosedPath(reversed_segs)
+
+
+def rotate_panel_90cw(panel: Panel) -> Panel:
+    """Rotate panel 90° clockwise in SVG space. All path coordinates are transformed.
+
+    Transform: (x, y) -> (y, w - x) where w = panel.width.
+    New width = old height, new height = old width.
+    Arc clockwise flags are preserved (orientation-preserving transform, det=+1).
+    """
+    w = panel.width
+
+    def rot(p: Point) -> Point:
+        return Point(p.y, w - p.x)
+
+    def rot_seg(seg: PathSegment) -> PathSegment:
+        match seg:
+            case Line(start=s, end=e):
+                return Line(rot(s), rot(e))
+            case Arc(start=s, end=e, radius=r, large_arc=la, clockwise=cw):
+                return Arc(rot(s), rot(e), r, la, cw)
+            case CubicBezier(start=s, cp1=p1, cp2=p2, end=e):
+                return CubicBezier(rot(s), rot(p1), rot(p2), rot(e))
+
+    def rot_path(path: ClosedPath) -> ClosedPath:
+        return ClosedPath(tuple(rot_seg(s) for s in path.segments))
+
+    def rot_hole(hole):
+        match hole:
+            case CircleHole(centre=c, diameter=d):
+                return CircleHole(rot(c), d)
+            case ClosedHole(path=p):
+                return ClosedHole(rot_path(p))
+
+    new_outline     = rot_path(panel.outline)
+    new_holes       = [rot_hole(h) for h in panel.holes]
+    new_score_lines = [Line(rot(sl.start), rot(sl.end)) for sl in panel.score_lines]
+    new_marks       = [dataclasses.replace(m, position=rot(m.position),
+                                            angle_deg=m.angle_deg + 90.0)
+                       for m in panel.marks]
+
+    return dataclasses.replace(
+        panel,
+        outline=new_outline,
+        holes=new_holes,
+        score_lines=new_score_lines,
+        marks=new_marks,
+        width=panel.height,
+        height=panel.width,
+        grain_angle_deg=panel.grain_angle_deg + 90.0,
+    )

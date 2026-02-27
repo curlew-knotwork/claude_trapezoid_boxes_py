@@ -222,9 +222,10 @@ class CommonConfig:
     sheet_height:  float = 600.0
     labels:        bool  = True
     dim_mode:      DimMode = DimMode.OUTER
-    colorblind:    bool  = False
-    json_errors:   bool  = False
-    output:        str   = "trapezoid_box_output.svg"
+    colorblind:        bool  = False
+    json_errors:       bool  = False
+    output:            str   = "trapezoid_box_output.svg"
+    display_stroke_mm: float = 0.0   # 0 = laser hairline; >0 overrides for human-viewable output
 
 
 @dataclass

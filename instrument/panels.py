@@ -136,9 +136,16 @@ def _make_walls(geom: TrapezoidGeometry, radius: float,
     leg_left = _leg_wall(PanelType.WALL_LEG_LEFT, "WALL_LEG_LEFT", ll, d, t,
                           radius, protrude_outward, burn, tol, la)
     panels.append(leg_left)
-    # WALL_LEG_RIGHT: isosceles copy
+    # WALL_LEG_RIGHT: isosceles copy — fix label text copied from leg_left
+    from core.models import MarkType
+    fixed_marks = [
+        dataclasses.replace(m, content="WALL_LEG_RIGHT")
+        if m.type == MarkType.LABEL else m
+        for m in leg_left.marks
+    ]
     leg_right = dataclasses.replace(
-        leg_left, type=PanelType.WALL_LEG_RIGHT, name="WALL_LEG_RIGHT")
+        leg_left, type=PanelType.WALL_LEG_RIGHT, name="WALL_LEG_RIGHT",
+        marks=fixed_marks)
     panels.append(leg_right)
 
     return panels
