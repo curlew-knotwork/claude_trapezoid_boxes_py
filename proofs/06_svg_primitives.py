@@ -3,7 +3,7 @@
 Generates small SVG files you can open in Inkscape or a browser to visually
 verify the geometry before writing any production code.
 
-Outputs (in diagrams/ directory):
+Outputs (in same directory as this script):
   06a_corner_arcs.svg      — all four BASE corners with arcs at 2x scale
   06b_finger_strip.svg     — one finger joint edge (BASE long_bottom)
   06c_full_base.svg        — complete BASE panel outline
@@ -20,9 +20,6 @@ No dependencies beyond stdlib. Run with: python3 06_svg_primitives.py
 
 import math
 import os
-
-from geometry_utils import tang, centre_offset, inward_bisector, corner_arc_start_end
-from geometry_utils import finger_count_and_width
 
 # ── SVG helpers ───────────────────────────────────────────────────────────────
 
@@ -58,7 +55,22 @@ def line(x1, y1, x2, y2, scale=3.0, stroke="grey", width=0.3):
             f'stroke-dasharray="{1.5*scale:.3f},{1.5*scale:.3f}"/>\n')
 
 
-# ── Local alias for SVG arc path segment ──────────────────────────────────────
+# ── Geometry functions (identical to earlier scripts) ─────────────────────────
+
+def tang(angle_deg, R):
+    return R / math.tan(math.radians(angle_deg / 2))
+
+
+def centre_offset(angle_deg, R):
+    return R / math.sin(math.radians(angle_deg / 2))
+
+
+def inward_bisector(edge_a_dir, edge_b_dir):
+    bx = -edge_a_dir[0] + edge_b_dir[0]
+    by = -edge_a_dir[1] + edge_b_dir[1]
+    mag = math.sqrt(bx*bx + by*by)
+    return bx/mag, by/mag
+
 
 def arc_path_segment(start, end, R, sweep=1):
     """SVG arc path: A rx ry x-rotation large-arc-flag sweep-flag x y"""
@@ -67,8 +79,17 @@ def arc_path_segment(start, end, R, sweep=1):
 
 
 def corner_arc_points(vertex, edge_a_dir, edge_b_dir, R, angle_deg):
-    """Local alias for corner_arc_start_end from geometry_utils."""
-    return corner_arc_start_end(vertex, edge_a_dir, edge_b_dir, R, angle_deg)
+    td = tang(angle_deg, R)
+    arc_start = (vertex[0] - edge_a_dir[0]*td, vertex[1] - edge_a_dir[1]*td)
+    arc_end   = (vertex[0] + edge_b_dir[0]*td, vertex[1] + edge_b_dir[1]*td)
+    return arc_start, arc_end
+
+
+def finger_count_and_width(available, nominal):
+    n = round(available / nominal)
+    if n % 2 == 0: n -= 1
+    n = max(3, n)
+    return n, available / n
 
 
 # ── Reference values ──────────────────────────────────────────────────────────
@@ -98,8 +119,7 @@ TR = (leg_inset+short_o, 0.0)
 BR = (long_o,         380.0)
 BL = (0.0,            380.0)
 
-diagrams_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'diagrams')
-diagrams_dir = os.path.realpath(diagrams_dir)
+script_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 # ══════════════════════════════════════════════════════════════════════════════
@@ -158,16 +178,16 @@ content = ""
 
 # Place four corners in a 2×2 grid
 grid = [
-    (PAD+CORNER_SIZE/2, PAD+CORNER_SIZE/2, TL, (-leg_ax,-leg_ay), (1,0), short_end_angle, "TL"),
+    (PAD+CORNER_SIZE/2, PAD+CORNER_SIZE/2, TL, (leg_ax,-leg_ay), (1,0), long_end_angle, "TL"),
     (PAD+CORNER_SIZE*2, PAD+CORNER_SIZE/2, TR, (1,0), (leg_ax,leg_ay), long_end_angle,  "TR"),
-    (PAD+CORNER_SIZE/2, PAD+CORNER_SIZE*2, BL, (-1,0), (-leg_ax,-leg_ay), long_end_angle,  "BL"),
+    (PAD+CORNER_SIZE/2, PAD+CORNER_SIZE*2, BL, (-1,0), (leg_ax,-leg_ay), short_end_angle,  "BL"),
     (PAD+CORNER_SIZE*2, PAD+CORNER_SIZE*2, BR, (leg_ax,leg_ay), (-1,0), short_end_angle, "BR"),
 ]
 
 for cx, cy, V, ea, eb, ang, lbl in grid:
     content += draw_corner(cx, cy, V, ea, eb, ang, lbl, scale=1)
 
-with open(os.path.join(diagrams_dir, "06a_corner_arcs.svg"), "w") as f:
+with open(os.path.join(script_dir, "06a_corner_arcs.svg"), "w") as f:
     f.write(f'<?xml version="1.0" encoding="UTF-8"?>\n'
             f'<svg xmlns="http://www.w3.org/2000/svg" width="{W}mm" height="{H}mm" '
             f'viewBox="0 0 {W} {H}">\n'
@@ -224,7 +244,7 @@ strip_content = (
     + f'</text>\n'
     + f'</g>\n'
 )
-with open(os.path.join(diagrams_dir, "06b_finger_strip.svg"), "w") as f:
+with open(os.path.join(script_dir, "06b_finger_strip.svg"), "w") as f:
     f.write(f'<?xml version="1.0" encoding="UTF-8"?>\n'
             f'<svg xmlns="http://www.w3.org/2000/svg" '
             f'width="{SVG_W*SCALE_B:.3f}mm" height="{SVG_H*SCALE_B:.3f}mm" '
@@ -247,10 +267,10 @@ def build_base_outline():
     tl = TL;  tr = TR;  br = BR;  bl = BL
 
     # Corner arc start/end points
-    tl_s, tl_e = corner_arc_points(tl, (-leg_ax,-leg_ay), (1,0), R, short_end_angle)
+    tl_s, tl_e = corner_arc_points(tl, (leg_ax,-leg_ay), (1,0), R, long_end_angle)
     tr_s, tr_e = corner_arc_points(tr, (1,0), (leg_ax,leg_ay), R, long_end_angle)
     br_s, br_e = corner_arc_points(br, (leg_ax,leg_ay), (-1,0), R, short_end_angle)
-    bl_s, bl_e = corner_arc_points(bl, (-1,0), (-leg_ax,-leg_ay), R, long_end_angle)
+    bl_s, bl_e = corner_arc_points(bl, (-1,0), (leg_ax,-leg_ay), R, short_end_angle)
 
     def p(x, y): return f"{(x+PAD_C)*SCALE_C:.3f},{(y+PAD_C)*SCALE_C:.3f}"
     def a(s, e): return f"A {R*SCALE_C:.3f} {R*SCALE_C:.3f} 0 0 1 {p(*e)}"
@@ -275,14 +295,15 @@ def build_base_outline():
     d += a(tl_s, tl_e) + " "  # TL arc
 
     # TL → TR (short top): finger zone
-    avail_short_c = short_o - 2*tang_long
+    # tl_e is the arc END point — it IS the finger zone start. Do NOT add tang again.
+    # tr_s is the arc START point of the TR corner — it IS the finger zone end.
+    # Available length = tr_s.x - tl_e.x (both x-coords, y=0 on this edge)
+    avail_short_c = tr_s[0] - tl_e[0]
     n_short_c, fw_short_c = finger_count_and_width(avail_short_c, fw)
-    d += f"L {p(tl_e[0] + tang_long, tl_e[1])} "
-    # Finger zone along short edge
-    x_pos = tl_e[0] + tang_long
+    # No plain-line segment here — tl_e IS the start of the finger zone
     is_tab = True
     for i in range(n_short_c):
-        x0 = tl_e[0] + tang_long + i*fw_short_c
+        x0 = tl_e[0] + i*fw_short_c
         x1 = x0 + fw_short_c
         if is_tab:
             d += (f"L {p(x0, 0)} L {p(x0, -T)} L {p(x1, -T)} L {p(x1, 0)} ")
@@ -297,7 +318,11 @@ def build_base_outline():
     d += a(br_s, br_e) + " "  # BR arc
 
     # BR → BL (long bottom): finger zone
-    avail_long_c = long_o - 2*tang_short
+    # BR corner is short_end_angle → tang_short. BL corner is long_end_angle → tang_long.
+    # br_e is the arc END of the BR corner — finger zone starts here.
+    # bl_s is the arc START of the BL corner — finger zone ends here.
+    # Available = br_e.x - bl_s.x (travelling right to left, y=380)
+    avail_long_c = br_e[0] - bl_s[0]
     n_long_c, fw_long_c = finger_count_and_width(avail_long_c, fw)
     x_pos = br_e[0]
     is_tab = True
@@ -315,7 +340,7 @@ def build_base_outline():
     return d
 
 base_d = build_base_outline()
-with open(os.path.join(diagrams_dir, "06c_full_base.svg"), "w") as f:
+with open(os.path.join(script_dir, "06c_full_base.svg"), "w") as f:
     f.write(f'<?xml version="1.0" encoding="UTF-8"?>\n'
             f'<svg xmlns="http://www.w3.org/2000/svg" '
             f'width="{SVG_W_C*SCALE_C:.3f}mm" height="{SVG_H_C*SCALE_C:.3f}mm" '
@@ -390,7 +415,7 @@ svg_d += (f'<text x="{rx(short_o/2):.3f}" y="{ry(33):.3f}" '
           f'lid = short_inner - 2*(T+tol) = {lid_w:.1f}mm'
           f'</text>\n')
 
-with open(os.path.join(diagrams_dir, "06d_lid_width.svg"), "w") as f:
+with open(os.path.join(script_dir, "06d_lid_width.svg"), "w") as f:
     f.write(f'<?xml version="1.0" encoding="UTF-8"?>\n'
             f'<svg xmlns="http://www.w3.org/2000/svg" '
             f'width="{W_D*SCALE_D:.3f}mm" height="{H_D*SCALE_D+2*PAD_D*SCALE_D:.3f}mm" '
@@ -399,10 +424,65 @@ with open(os.path.join(diagrams_dir, "06d_lid_width.svg"), "w") as f:
             + svg_d + '</svg>\n')
 print("  Written 06d_lid_width.svg")
 
-print(f"\nAll SVG files written to: {diagrams_dir}")
+print(f"\nAll SVG files written to: {script_dir}")
 print("\nOpen in Inkscape and verify:")
 print("  06a: arcs are smooth and tangent, red cross marks vertex, no gaps at arc-line joins")
 print("  06b: regular finger pattern, centred in available space")
 print("  06c: trapezoid BASE with arcs at all four corners, fingers on short and long edges")
 print("  06d: green lid fits inside grey walls with groove seats visible")
 print("\nIf it looks right visually, the SVG generator is working correctly.")
+
+# ══════════════════════════════════════════════════════════════════════════════
+# Corner angle invariant verification (numeric, not visual)
+# INVARIANT: for any clockwise-wound trapezoid, narrow-end corners = obtuse
+# (90+leg_angle), wide-end corners = acute (90-leg_angle).
+# Verify this holds for the body panel corners TL, TR, BL, BR.
+
+print("\n── Corner angle invariant — body panel ──")
+
+passed_ca = 0
+failed_ca = 0
+
+def unit_v(p1, p2):
+    dx=p2[0]-p1[0]; dy=p2[1]-p1[1]; m=math.sqrt(dx**2+dy**2); return dx/m, dy/m
+
+def interior_angle(vertex, prev_pt, next_pt):
+    d_in  = unit_v(prev_pt, vertex)
+    d_out = unit_v(vertex,  next_pt)
+    dot   = (-d_in[0])*d_out[0] + (-d_in[1])*d_out[1]
+    return math.degrees(math.acos(max(-1.0, min(1.0, dot))))
+
+# Body panel corners (CW order: BL → TL → TR → BR → BL)
+# TL, TR = narrow end = should be obtuse = long_end_angle
+# BL, BR = wide end   = should be acute  = short_end_angle
+corner_cases = [
+    ("TL", TL, BL, TR, long_end_angle,  "narrow → obtuse"),
+    ("TR", TR, TL, BR, long_end_angle,  "narrow → obtuse"),
+    ("BL", BL, BR, TL, short_end_angle, "wide → acute"),
+    ("BR", BR, TL, BL, short_end_angle, "wide → acute"),  # CW: BR prev=TL? No:
+]
+
+# CW traversal: BL→TL→TR→BR→BL, so:
+# TL: prev=BL, next=TR
+# TR: prev=TL, next=BR
+# BR: prev=TR, next=BL
+# BL: prev=BR, next=TL
+corner_cases = [
+    ("TL", TL, BL, TR, long_end_angle,  "narrow-end → obtuse"),
+    ("TR", TR, TL, BR, long_end_angle,  "narrow-end → obtuse"),
+    ("BR", BR, TR, BL, short_end_angle, "wide-end → acute"),
+    ("BL", BL, BR, TL, short_end_angle, "wide-end → acute"),
+]
+
+for name, v, prev, nxt, expected, desc in corner_cases:
+    actual = interior_angle(v, prev, nxt)
+    ok     = abs(actual - expected) < 0.01
+    status = "PASS" if ok else "FAIL"
+    print(f"  {status}  {name} ({desc}): geometry={actual:.4f}° assigned={expected:.4f}°")
+    if ok: passed_ca += 1
+    else:  failed_ca += 1
+
+if failed_ca == 0:
+    print("  Corner angle invariant holds for all four body panel corners.")
+else:
+    print(f"  *** {failed_ca} corner angle invariant FAILURES — geometry is wrong ***")
