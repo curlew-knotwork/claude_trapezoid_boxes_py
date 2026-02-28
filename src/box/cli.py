@@ -9,6 +9,11 @@ import math
 import sys
 from pathlib import Path
 
+# ── path setup (allows running from project root) ─────────────────────────────
+_src = str(Path(__file__).resolve().parent.parent)   # src/box/cli.py → src/
+if _src not in sys.path:
+    sys.path.insert(0, _src)
+
 from constants import (
     TOOL_VERSION, DEFAULT_THICKNESS_MM, DEFAULT_BURN_MM, DEFAULT_TOLERANCE_MM,
     DEFAULT_SHEET_WIDTH_MM, DEFAULT_SHEET_HEIGHT_MM,

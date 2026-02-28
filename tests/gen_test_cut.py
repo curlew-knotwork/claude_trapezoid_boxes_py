@@ -194,11 +194,11 @@ elements += [f'<path d="{bp}" {CUT}/>', f'<path d="{hp}" {CUT}/>',
 bboxes.append(("BASE", x, y, long_o, length_o))
 x += long_o + GAP
 
-wl = build_wall(x, y, length_o, n_long, fw_long,
+wl = build_wall(x, y, long_o, n_long, fw_long,
                 n_ww, fw_ww, True, n_ww, fw_ww, True)
-elements += [f'<path d="{wl}" {CUT}/>', lbl(x + length_o/2, y - 3, "WALL_LONG")]
-bboxes.append(("WALL_LONG", x, y, length_o, depth_o))
-x += length_o + GAP
+elements += [f'<path d="{wl}" {CUT}/>', lbl(x + long_o/2, y - 3, "WALL_LONG")]
+bboxes.append(("WALL_LONG", x, y, long_o, depth_o))
+x += long_o + GAP
 
 ws = build_wall(x, y, short_o, n_short, fw_short,
                 n_ww, fw_ww, False, n_ww, fw_ww, False)
@@ -278,7 +278,8 @@ svg = f'''<?xml version="1.0" encoding="UTF-8"?>
 <rect width="{fmt(total_w)}" height="{fmt(total_h)}" fill="white"/>
 ''' + "\n".join(elements) + "\n</svg>"
 
-out = "/mnt/user-data/outputs/test_cut_set.svg"
+import pathlib
+out = str(pathlib.Path(__file__).parent / "test_cut_set.svg")
 with open(out, "w") as f:
     f.write(svg)
 print(f"Written: {out}  ({total_w:.1f}×{total_h:.1f}mm)")
