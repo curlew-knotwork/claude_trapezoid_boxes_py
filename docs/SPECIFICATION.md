@@ -431,7 +431,7 @@ CommonConfig — parameters shared by both modes.
 > ℹ️ burn:          float = 0.05
 
 
-> ℹ️ tolerance:     float = 0.1
+> ℹ️ tolerance:     float = 0.0
 
 
 > ℹ️ corner_radius: float | None = None    # None = auto (3 × thickness)
@@ -1513,7 +1513,7 @@ OVERCUT_MIN_STRUCT_RATIO = 0.5 (defined in constants.py). This ensures the remai
 ### 12.3 Box Mode Additional Rules
 Sliding lid: depth &gt; 3 × thickness (need room for slide groove).
 
-Sliding lid + angled walls: leg_angle_deg &lt; arccos(thickness / (thickness + tolerance)). At steeper angles the square-cut lid edge cannot seat in the tilted groove without binding. Default limit (T=3, tol=0.1): 14.59 degrees. Error code: ERR_VALIDATION_GROOVE_ANGLE_TOO_STEEP.
+Sliding lid + angled walls: leg_angle_deg &lt; arccos(thickness / (thickness + tolerance)). At steeper angles the square-cut lid edge cannot seat in the tilted groove without binding. With default tol=0.0 this rejects all non-rectangular trapezoids; use --tolerance 0.1 when generating sliding-lid boxes. Default limit (T=3, tol=0.1): 14.59 degrees. Error code: ERR_VALIDATION_GROOVE_ANGLE_TOO_STEEP.
 
 ### 12.4 Instrument Mode Additional Rules
 neck_clearance + soundhole_size_estimate < length (sound hole must fit longitudinally). For rounded-trapezoid holes the precise check is: neck_clearance + hole_height < length − tail_block_thickness. ERR_VALIDATION_SOUNDHOLE_TOO_TALL.
@@ -2073,7 +2073,7 @@ Top-level flags handled before subcommand parsing. No subcommand required for --
 > ℹ️ --burn FLOAT          Laser kerf compensation (default: 0.05)
 
 
-> ℹ️ --tolerance FLOAT     Joint fit clearance (default: 0.1)
+> ℹ️ --tolerance FLOAT     Joint fit clearance (default: 0.0 = rubber mallet; 0.1 = hand press)
 
 
 > ℹ️ --corner-radius FLOAT Corner radius on base/soundboard (default: auto = 3×thickness)
@@ -2687,7 +2687,7 @@ Therefore: A_down &gt; 0 ↔ A_up &lt; 0 ↔ clockwise in Y-up ↔ clockwise vis
 
 
 ### Reference Values for Dulcimer Preset
-long=180, short=120, length=380, depth=90, thickness=3.0, finger_width=9.0 (auto), tolerance=0.1, leg_angle_deg=4.51°
+long=180, short=120, length=380, depth=90, thickness=3.0, finger_width=9.0 (auto), tolerance=0.0, leg_angle_deg=4.51°
 
 | Quantity | Value |
 |---|---|
@@ -2718,7 +2718,7 @@ This means every physical constraint of your design must be calculated in advanc
 ### B.2 Why Finger Joints?
 A finger joint — the interlocking row of tabs and slots on laser-cut boxes — is the standard way to join two flat panels at a right angle. The tabs on one panel slide into the slots on the other, giving a large gluing surface and a self-aligning joint that holds its shape while the glue sets.
 
-The key numbers: finger_width controls how wide each finger is; depth controls how far it penetrates; tolerance controls the clearance so the joint slides together without forcing but also without rattling. The auto defaults (finger_width = 3x thickness, tolerance = 0.1mm) are a good starting point for 3mm plywood. The test strip exists so you can verify these numbers for your specific machine before cutting a full sheet.
+The key numbers: finger_width controls how wide each finger is; depth controls how far it penetrates; tolerance controls the clearance so the joint slides together without forcing but also without rattling. The auto defaults (finger_width = 3x thickness, tolerance = 0.0mm for rubber-mallet fit) are a good starting point for 3mm plywood. Use --tolerance 0.1 for hand-press fit or when using a sliding lid. The test strip exists so you can verify these numbers for your specific machine before cutting a full sheet.
 
 ### B.3 The Burn: Why Your Cuts Are Slightly Too Big
 When a laser burns a line, it vaporises a small channel of material called the kerf — typically 0.1 to 0.2mm wide for a CO2 laser cutting 3mm ply. The laser burns on both sides of your intended line, so a 10mm tab comes out narrower than 10mm.

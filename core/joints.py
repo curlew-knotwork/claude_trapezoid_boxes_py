@@ -1,9 +1,14 @@
 """
 core/joints.py — All finger joint geometry.
 
-Burn compensation rule:
+Burn compensation rule (spec §10.5):
 Every cut line is offset by burn in the direction that enlarges the feature
-being created by that cut.
+being created by that cut. SVG paths are laser centerlines; laser removes burn mm
+from each side of every cut path.
+  drawn_tab  = fw + 2*burn   → physical_tab  = fw
+  drawn_slot = fw - 2*burn + 2*tol → physical_slot = fw + 2*tol
+  nominal_fit = -4*burn + 2*tol  (negative = interference)
+  burn=0.05, tol=0.0 → fit=-0.2mm (rubber mallet)
 
 WINDING CONVENTION: All panel outlines follow clockwise winding in SVG Y-down space.
 Outward for a FingerEdge = 90° clockwise from edge direction in SVG Y-down space.
@@ -160,12 +165,12 @@ def finger_edge_to_path_segments(edge: FingerEdge) -> list[PathSegment]:
     tol  = edge.tolerance
     depth = edge.depth
 
-    tab_width = fw - tol    # tab narrower → fits into gap
-    gap_width = fw + tol    # gap wider → receives tab
-    depth_out = depth + burn  # slot/finger depth with kerf compensation
+    tab_width = fw + 2 * burn          # drawn wider; laser removes 2*burn → physical fw
+    gap_width = fw - 2 * burn + 2 * tol  # drawn narrower; laser widens by 2*burn → physical fw+2*tol
+    depth_out = depth + burn           # slot/finger depth with kerf compensation
 
     if edge.is_slotted:
-        # Swap tab/gap roles
+        # Slotted panel: even features are slots (use gap_width), odd are lands (use tab_width)
         tab_width, gap_width = gap_width, tab_width
 
     # Staircase from term_start to term_end

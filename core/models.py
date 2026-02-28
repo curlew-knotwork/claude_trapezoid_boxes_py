@@ -215,7 +215,7 @@ class CommonConfig:
     depth:         float
     thickness:     float = 3.0
     burn:          float = 0.05
-    tolerance:     float = 0.1
+    tolerance:     float = 0.0
     corner_radius: float | None = None    # None = auto (3 × thickness)
     finger_width:  float | None = None    # None = auto (3 × thickness)
     sheet_width:   float = 600.0

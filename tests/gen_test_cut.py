@@ -85,10 +85,15 @@ def fingers(p_start, n, fw_act, d_edge, d_out, is_slot):
     tab_w = fw_act + 2 * BURN
     gap_w = fw_act - 2 * BURN + 2 * TOL
     sign  = 1.0 if not is_slot else -1.0
+    # Tab panel:  even=tab (tab_w), odd=gap (gap_w)
+    # Slot panel: even=slot (gap_w — narrower so laser produces interference fit),
+    #             odd=land (tab_w — wider, matching base gap)
+    even_w = gap_w if is_slot else tab_w
+    odd_w  = tab_w if is_slot else gap_w
     cx, cy = p_start
     parts = []
     for i in range(n):
-        w = tab_w if i % 2 == 0 else gap_w
+        w = even_w if i % 2 == 0 else odd_w
         nx = cx + d_edge[0] * w
         ny = cy + d_edge[1] * w
         if i % 2 == 0:  # tab or slot
