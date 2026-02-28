@@ -53,7 +53,7 @@ def fingers(p_start, n, fw_act, d_edge, outward):
     outward=False: slot into panel from right-of-travel (wall bottom/end slots).
     First tab (i=0) is always a protrusion or slot.
     """
-    perp=(-d_edge[1], d_edge[0])  # left of travel = outward for CW panels
+    perp=(d_edge[1], -d_edge[0])  # left of travel in SVG y-down = outward for CW panels
     sign=1.0 if outward else -1.0
     cx,cy=p_start
     parts=[]
@@ -171,10 +171,10 @@ bboxes.append(("BASE",x,y,long_o,length_o))
 x+=long_o+GAP
 
 # WALL_LONG: both ends are slots (WALL_LEG fingers go in)
-wl=build_wall(x,y,length_o, n_long,fw_long, n_ww,fw_ww, n_ww,fw_ww, False,False)
-elements+=[f'<path d="{wl}" {CUT}/>', lbl(x+length_o/2, y-3, "WALL_LONG")]
-bboxes.append(("WALL_LONG",x,y,length_o,depth_o))
-x+=length_o+GAP
+wl=build_wall(x,y,long_o, n_long,fw_long, n_ww,fw_ww, n_ww,fw_ww, False,False)
+elements+=[f'<path d="{wl}" {CUT}/>', lbl(x+long_o/2, y-3, "WALL_LONG")]
+bboxes.append(("WALL_LONG",x,y,long_o,depth_o))
+x+=long_o+GAP
 
 # WALL_SHORT: both ends have fingers (protrude into WALL_LEG slots)
 ws=build_wall(x,y,short_o, n_short,fw_short, n_ww,fw_ww, n_ww,fw_ww, True,True)
@@ -241,6 +241,6 @@ svg=f'''<?xml version="1.0" encoding="UTF-8"?>
 out="/mnt/user-data/outputs/test_cut_set.svg"
 with open(out,"w") as f: f.write(svg)
 print(f"Written: {out}  ({total_w:.1f}×{total_h:.1f}mm)")
-print(f"Parts: BASE {long_o:.0f}×{length_o:.0f} | WALL_LONG {length_o:.0f}×{depth_o:.0f} | "
+print(f"Parts: BASE {long_o:.0f}×{length_o:.0f} | WALL_LONG {long_o:.0f}×{depth_o:.0f} | "
       f"WALL_SHORT {short_o:.0f}×{depth_o:.0f} | WALL_LEG {leg_len:.1f}×{depth_o:.0f}×2")
 print(f"Joints: BASE↔walls (outward/slot) | walls↔walls (finger/slot at ends)")
