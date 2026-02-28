@@ -37,8 +37,28 @@ SVG paths are laser centerlines. Laser removes burn mm from each side of every c
 - If verification fails: print errors, do not write file, do not present output.
 - Never present an SVG that has not passed verification.
 
+## SELF-REVIEW PROTOCOL — MANDATORY BEFORE ANY "DONE" CLAIM
+
+The recurring failure mode: make a change, declare victory, user finds the bug in seconds, repeat.
+This is not acceptable. Before saying anything is fixed, correct, or complete, execute this checklist:
+
+1. **Read every file you touched, in full.** Not just the changed lines. The whole file, top to bottom.
+2. **Trace the full code path with concrete numbers.** Use real inputs (e.g., fw=5.0, burn=0.05, tol=0.0).
+   Compute the expected output from the spec by hand. Then follow the code and verify it matches — to the digit.
+3. **Audit every file that shares the same pattern.** Fix in joints.py? Immediately check gen_test_cut.py, proofs/, and any other file that touches burn/tab/slot. Same class of bug may exist in multiple places.
+4. **Re-read the relevant spec section.** Do not trust memory notes — they have been wrong before. The spec is authoritative.
+5. **Run verification scripts and inspect the output values**, not just "did it exit 0?"
+   Check nominal_fit, panel dimensions, finger counts — not just absence of crash.
+6. **Actively look for what you missed.** Assume something is wrong. Find it yourself before the user does.
+7. **Check consistency across mating parts.** If panel A changed, verify panel B still fits panel A.
+
+If any step cannot be completed, say so explicitly and state what remains unverified.
+Never say "all fixed" or "tests pass" without completing this protocol.
+"It ran without error" is not verification. "I traced the math and it matches spec §X.Y" is verification.
+
 ## WHAT NOT TO DO
 - Do not present output and wait for the user to find the bug.
 - Do not re-derive known invariants from scratch — check the spec first.
 - Do not use ratio-based corner radii.
 - Do not use mm-suffixed stroke-width on cut lines.
+- Do not treat "STATUS: fixed" in memory notes as ground truth — verify against actual code.

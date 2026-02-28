@@ -204,15 +204,15 @@ def finger_edge_to_path_segments(edge: FingerEdge) -> list[PathSegment]:
         elif not is_tab and not edge.is_slotted:
             # Gap: straight along (no protrusion)
             segs.append(Line(x0, x1))
-        elif not is_tab and edge.is_slotted:
-            # Slot protrudes outward
+        elif is_tab and edge.is_slotted:
+            # Slot (even feature on slotted edge): protrudes outward
             p_out0 = move_out(x0, depth_out)
             p_out1 = move_out(x1, depth_out)
             segs.append(Line(x0, p_out0))
             segs.append(Line(p_out0, p_out1))
             segs.append(Line(p_out1, x1))
         else:
-            # Tab on slotted edge: straight
+            # Land (odd feature on slotted edge): straight
             segs.append(Line(x0, x1))
 
         finger_start = x1
