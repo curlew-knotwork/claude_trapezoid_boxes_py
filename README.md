@@ -170,6 +170,20 @@ Short version:
 
 ---
 
+## Claude Code configuration
+
+This project uses [Claude Code](https://claude.ai/claude-code) as its AI coding assistant. Claude Code loads instruction files automatically from standard locations:
+
+| File | Scope | Purpose |
+|---|---|---|
+| `~/.claude/CLAUDE.md` | Global (all projects) | Generic engineering discipline, self-review protocol |
+| `CLAUDE.md` (project root) | This project only | Burn model, geometry rules, SVG output rules |
+| `CLAUDE.local.md` (project root) | Local machine only, gitignored | Personal overrides |
+
+The project-level `CLAUDE.md` is version-controlled and documents the laser-cutting domain rules that Claude must follow. The global `~/.claude/CLAUDE.md` holds general software engineering standards that apply to all projects.
+
+---
+
 ## Spec document
 
 `docs/trapezoid_box_specification_v2.0.docx` is the authoritative source of truth. The code must conform to the spec. If there is a conflict between code and spec, fix the code.
