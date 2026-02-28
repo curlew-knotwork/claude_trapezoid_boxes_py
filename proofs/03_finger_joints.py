@@ -217,44 +217,78 @@ check_true("WALL_LEG delta within tolerance",
            delta_leg < tol,
            f"delta={delta_leg:.4f}mm")
 
-print("\n── Test 6: Burn compensation ──")
-burn = 0.05  # mm, half kerf
-# Tab: nominal width fw. After burn, tab becomes fw - 2*burn (narrower, correct)
-# Slot: nominal width fw. After burn, slot becomes fw + 2*burn (wider, correct)
-tab_after_burn  = fw - 2 * burn
-slot_after_burn = fw + 2 * burn
-clearance = slot_after_burn - tab_after_burn
-check("tab after burn = fw - 2*burn",  tab_after_burn,  fw - 2*burn)
-check("slot after burn = fw + 2*burn", slot_after_burn, fw + 2*burn)
-check("clearance = 4*burn",            clearance,       4*burn)
-# With tolerance applied: effective clearance includes tolerance on top of burn
-effective_clearance = clearance + 2*tol  # tolerance on each side of slot
-check("effective clearance = 4*burn + 2*tol", effective_clearance, 4*burn + 2*tol)
+print("\n── Test 6: Burn compensation — correct physical model ──")
+burn = 0.05  # mm — default, matches boxes.py baseline
+tol  = 0.0   # 0.0 = friction fit; 0.1 = hand press
+# Physical model:
+#   SVG path = laser centerline. Laser removes burn mm each side of path.
+#   drawn_tab  = fw + 2*burn  → physical_tab  = fw  (kerf removes 2*burn)
+#   drawn_slot = fw - 2*burn + 2*tol  → physical_slot = fw + 2*tol
+#   nominal_fit = drawn_slot - drawn_tab = -4*burn + 2*tol
+#   burn=0.05, tol=0.0 → fit=-0.2mm  (rubber mallet — matches boxes.py defaults)
+#   burn=0.05, tol=0.1 → fit= 0.0mm  (hand press)
+#   Larger burn = tighter. Larger tol = looser. Tune in 0.01mm steps.
+tab_w = fw + 2 * burn
+gap_w = fw - 2 * burn + 2 * tol
+nominal_fit = gap_w - tab_w  # = -4*burn + 2*tol
+
+check("tab_width = fw + 2*burn",          tab_w,       fw + 2*burn)
+check("gap_width = fw - 2*burn + 2*tol",  gap_w,       fw - 2*burn + 2*tol)
+check("nominal_fit = -4*burn + 2*tol",    nominal_fit, -4*burn + 2*tol)
+check("friction fit default: fit=-0.2mm", nominal_fit, -0.2)
+check_true("friction fit is interference (negative)", nominal_fit < 0,
+           f"fit={nominal_fit:.3f}mm")
+
+# Verify larger burn = tighter (more negative fit)
+fit_tighter = (fw - 2*0.1 + 2*tol) - (fw + 2*0.1)
+check_true("burn=0.1 gives tighter fit than burn=0.05",
+           fit_tighter < nominal_fit,
+           f"burn=0.1 fit={fit_tighter:.3f} < burn=0.05 fit={nominal_fit:.3f}")
+
+# Verify larger tol = looser (less negative fit)
+fit_with_tol = (fw - 2*burn + 2*0.1) - (fw + 2*burn)
+check_true("tol=0.1 gives looser fit than tol=0.0",
+           fit_with_tol > nominal_fit,
+           f"tol=0.1 fit={fit_with_tol:.3f} > tol=0.0 fit={nominal_fit:.3f}")
+
+# Hand-press default: burn=0.05, tol=0.1 → fit=0.0
+fit_hand_press = (fw - 2*0.05 + 2*0.1) - (fw + 2*0.05)
+check("hand-press: burn=0.05 tol=0.1 → fit=0.0", fit_hand_press, 0.0)
+
+# Confirm old (pre-fix) model was wrong: tab=fw, gap=fw → no compensation
+old_tab = fw; old_gap = fw
+old_phys_tab  = old_tab  - 2*burn   # laser removes burn each side
+old_phys_slot = old_gap  + 2*burn   # laser widens slot
+old_effective_fit = old_phys_slot - old_phys_tab  # = 4*burn = +0.2mm clearance
+check("OLD model was floppy: 4*burn=0.2mm clearance", old_effective_fit, 4*burn)
+check_true("OLD model was clearance (positive) → floppy", old_effective_fit > 0,
+           f"old fit={old_effective_fit:.3f}mm")
 
 print("\n── Test 7: Sliding lid width ──")
-# Correct formula from spec: short_inner - 2*(thickness+tolerance)
-# = (short_outer - 2T) - 2*(T+tol) = short_outer - 4T - 2*tol
-lid_w = (short_o - 2*T) - 2*(T + tol)
-check("sliding lid width = short_inner - 2*(T+tol)", lid_w, 107.8)
+# Sliding lid uses its own tolerance (0.1mm) regardless of joint tol
+# Correct formula from spec: short_inner - 2*(thickness+lid_tol)
+lid_tol = 0.1
+lid_w = (short_o - 2*T) - 2*(T + lid_tol)
+check("sliding lid width = short_inner - 2*(T+lid_tol)", lid_w, 107.8)
 
 # The WRONG formula from an earlier version of the spec:
-lid_w_wrong = short_o + 2*(T + tol)
-check_true("wrong formula (short_outer + 2*(T+tol)) gives wider lid",
+lid_w_wrong = short_o + 2*(T + lid_tol)
+check_true("wrong formula (short_outer + 2*(T+lid_tol)) gives wider lid",
            lid_w_wrong > short_o,
            f"wrong={lid_w_wrong:.1f}mm, correct={lid_w:.1f}mm")
 print(f"  NOTE  Wrong formula gives {lid_w_wrong:.1f}mm, correct is {lid_w:.1f}mm — would not fit")
 
 print("\n── Test 8: Groove angle limit for sliding lid ──")
-# Groove width = T + tol. Lid edge effective width at angle = T/cos(alpha).
-# Fits if T/cos(alpha) <= T + tol → cos(alpha) >= T/(T+tol)
-crit_angle = math.degrees(math.acos(T / (T + tol)))
+# Groove width = T + lid_tol. Lid edge effective width at angle = T/cos(alpha).
+# Fits if T/cos(alpha) <= T + lid_tol → cos(alpha) >= T/(T+lid_tol)
+crit_angle = math.degrees(math.acos(T / (T + lid_tol)))
 check("critical groove angle", crit_angle, 14.593, tol=0.01)
 # Dulcimer angle is safe
 check_true("dulcimer angle < critical", leg_angle < crit_angle,
            f"{leg_angle:.3f}° < {crit_angle:.3f}°")
 # At exactly critical angle, lid just fits
 T_eff_at_crit = T / math.cos(math.radians(crit_angle))
-check("T_eff at critical angle = T+tol", T_eff_at_crit, T + tol)
+check("T_eff at critical angle = T+lid_tol", T_eff_at_crit, T + lid_tol)
 
 
 # ══════════════════════════════════════════════════════════════════════════════

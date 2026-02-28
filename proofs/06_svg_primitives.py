@@ -97,7 +97,8 @@ def finger_count_and_width(available, nominal):
 T         = 3.0
 R         = 9.0
 fw        = 9.0    # 3*T
-burn      = 0.05
+burn      = 0.05   # half-kerf default: drawn_tab=fw+2*burn, drawn_slot=fw-2*burn+2*tol
+tol       = 0.0    # 0.0=friction fit(-0.2mm), 0.1=hand press(0.0mm)
 leg_angle = 4.5140
 long_o    = 180.0
 short_o   = 120.0
@@ -214,21 +215,28 @@ x = 0.0
 # Plain line from 0 to tang_short
 d_finger += f"M {0},{STRIP_H/2} L {tang_short:.4f},{STRIP_H/2} "
 
-# Fingers
+# Fingers — apply correct burn model (see §10.5 and proof 03 test 6):
+#   drawn_tab  = fw + 2*burn  (tab drawn wider; laser kerf produces physical fw)
+#   drawn_slot = fw - 2*burn + 2*tol  (slot drawn narrower; kerf widens to fw+2*tol)
+#   nominal_fit = -4*burn + 2*tol = -0.2mm at burn=0.05,tol=0 (friction fit)
+tab_w = fw_long + 2*burn
+gap_w = fw_long - 2*burn + 2*tol
+fit   = gap_w - tab_w  # nominal_fit = -4*burn + 2*tol
 is_tab = True
+x_pos = tang_short
 for i in range(n_long):
-    x0 = tang_short + i * fw_long
-    x1 = x0 + fw_long
+    w = tab_w if is_tab else gap_w
+    x0 = x_pos
+    x1 = x_pos + w
     if is_tab:
-        # Tab protrudes downward (toward base interior)
         d_finger += (f"L {x0:.4f},{STRIP_H/2} "
                      f"L {x0:.4f},{STRIP_H/2+T} "
                      f"L {x1:.4f},{STRIP_H/2+T} "
                      f"L {x1:.4f},{STRIP_H/2} ")
     else:
-        # Slot — stays at midline
         d_finger += f"L {x1:.4f},{STRIP_H/2} "
     is_tab = not is_tab
+    x_pos = x1
 
 # Plain line from end of fingers to far edge
 d_finger += f"L {long_o:.4f},{STRIP_H/2}"
@@ -240,7 +248,7 @@ strip_content = (
     f'<g transform="translate({10*SCALE_B:.3f},{5*SCALE_B:.3f}) scale({SCALE_B})">\n'
     + f'<path d="{d_finger}" stroke="blue" fill="none" stroke-width="0.3"/>\n'
     + f'<text x="0" y="{STRIP_H+8}" font-size="4" font-family="monospace" fill="black">'
-    + f'BASE long_bottom: n={n_long} fingers, fw={fw_long:.4f}mm, avail={avail_long:.3f}mm'
+    + f'BASE long_bottom: n={n_long} fw_nominal={fw_long:.4f}mm tab={tab_w:.4f}mm gap={gap_w:.4f}mm nominal_fit={fit:+.3f}mm (burn={burn} tol={tol})'
     + f'</text>\n'
     + f'</g>\n'
 )

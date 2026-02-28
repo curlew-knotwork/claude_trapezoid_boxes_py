@@ -509,10 +509,18 @@ All numeric literals that appear in the codebase must be defined here. No other 
 > ℹ️ DEFAULT_THICKNESS_MM        = 3.0
 
 
-> ℹ️ DEFAULT_BURN_MM             = 0.05       # typical CO2 kerf compensation for 3mm ply
+> ℹ️ DEFAULT_BURN_MM             = 0.05       # Half-kerf: laser removes burn mm from each side of cut path.
+> ℹ️                                          # Formula (see §10.5): drawn_tab = fw+2*burn, drawn_slot = fw-2*burn+2*tol
+> ℹ️                                          # nominal_fit = -4*burn + 2*tol  (negative = interference, positive = clearance)
+> ℹ️                                          # burn=0.05, tol=0.0 → fit=-0.2mm  (rubber mallet — matches boxes.py default)
+> ℹ️                                          # burn=0.05, tol=0.1 → fit= 0.0mm  (hand press)
+> ℹ️                                          # Tune in 0.01mm steps. Larger burn = tighter. Larger tol = looser.
+> ℹ️                                          # WARNING: burn=0.1 with tol=0.1 also gives -0.2mm nominal but actual
+> ℹ️                                          # physical fit depends on machine kerf — prefer burn=0.05 as baseline.
 
 
-> ℹ️ DEFAULT_TOLERANCE_MM        = 0.1        # finger joint fit clearance
+> ℹ️ DEFAULT_TOLERANCE_MM        = 0.0        # Joint fit clearance added to slot width. 0.0 = friction fit at burn=0.05.
+> ℹ️                                          # Increase to 0.1 for hand-press fit. Do not exceed 0.2.
 
 
 > ℹ️ # Layout / sheet defaults
@@ -1289,16 +1297,20 @@ Convention: centre finger is a tab. For count = 2k+1 fingers (0-indexed), finger
 
 Staircase from term_start to term_end:
 
-> ℹ️ tab_width      = finger_width - tolerance  (tab narrower → fits into gap)
+> ℹ️ tab_width      = finger_width + 2*burn   (drawn wider so laser kerf produces nominal-width tab)
+> ℹ️ gap_width      = finger_width - 2*burn + 2*tolerance  (drawn narrower so kerf produces nominal slot, tolerance widens)
+> ℹ️ depth_out      = depth + burn            (expanded for kerf compensation)
 
+Physical model: SVG paths are laser centerlines. Laser removes burn mm from each side of every cut path. Therefore a tab drawn at fw+2*burn produces a physical tab of fw (kerf removes 2*burn total). A slot drawn at fw-2*burn produces a physical slot of fw. This gives zero-clearance fit when burn exactly equals actual_kerf/2.
 
-> ℹ️ gap_width      = finger_width + tolerance  (gap wider → receives tab)
+nominal_fit formula (treating drawn path as physical — boxes.py convention):
+  fit = gap_width - tab_width = (fw-2*burn+2*tol) - (fw+2*burn) = -4*burn + 2*tol
+  burn=0.05, tol=0.0 → fit=-0.2mm  (rubber mallet — matches boxes.py defaults)
+  burn=0.05, tol=0.1 → fit= 0.0mm  (hand press)
+  burn=0.05, tol=0.2 → fit=+0.2mm  (loose — for glue-up only)
+  Larger burn = tighter. Larger tol = looser. Tune burn in 0.01mm steps.
 
-
-> ℹ️ depth_out      = depth + burn              (expanded for kerf compensation)
-
-
-> ℹ️ if is_slotted: swap tab/gap roles
+Do NOT set burn=0.1 with tol=0.1 thinking fit=-0.2mm: the nominal formula gives -0.2mm but when actual machine kerf ≈ 0.05mm/side, physical fit = 0.0mm (hand press, not friction). Keep burn=0.05 as baseline and adjust from there.
 
 
 Coordinate transform from edge-local to panel-local space:
