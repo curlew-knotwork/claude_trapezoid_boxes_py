@@ -159,10 +159,10 @@ def _rect_wall(ptype, name, width, height, t, radius, protrude_outward, burn, to
     BR = Point(w, h);     BL = Point(0.0, h)
 
     # Wall panels: plain rectangles — no corner arcs. radius=0.
-    e_top    = make_finger_edge(TL, TR, t, t, protrude_outward, True,  burn, tol, 0.0, 0.0, 90.0, 90.0)
-    e_right  = make_finger_edge(TR, BR, t, t, protrude_outward, False, burn, tol, 0.0, 0.0, 90.0, 90.0)
-    e_bottom = make_finger_edge(BR, BL, t, t, protrude_outward, True,  burn, tol, 0.0, 0.0, 90.0, 90.0)
-    e_left   = make_finger_edge(BL, TL, t, t, protrude_outward, False, burn, tol, 0.0, 0.0, 90.0, 90.0)
+    e_top    = make_finger_edge(TL, TR, t, t, protrude_outward, True,  burn, tol, 2*burn, 2*burn, 90.0, 90.0)
+    e_right  = make_finger_edge(TR, BR, t, t, protrude_outward, False, burn, tol, 2*burn, 2*burn, 90.0, 90.0)
+    e_bottom = make_finger_edge(BR, BL, t, t, protrude_outward, True,  burn, tol, 2*burn, 2*burn, 90.0, 90.0)
+    e_left   = make_finger_edge(BL, TL, t, t, protrude_outward, False, burn, tol, 2*burn, 2*burn, 90.0, 90.0)
 
     edges = [e_top, e_right, e_bottom, e_left]
     outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])
@@ -182,11 +182,11 @@ def _leg_wall(ptype, name, width, height, t, radius, protrude_outward, burn, tol
     BR = Point(w, h);     BL = Point(0.0, h)
 
     # Wall panels: plain rectangles — no corner arcs. radius=0.
-    e_top    = make_finger_edge(TL, TR, t, t, protrude_outward, True,  burn, tol, 0.0, 0.0, 90.0, 90.0)
-    e_right  = make_finger_edge(TR, BR, t, t, protrude_outward, False, burn, tol, 0.0, 0.0, 90.0, 90.0)
+    e_top    = make_finger_edge(TL, TR, t, t, protrude_outward, True,  burn, tol, 2*burn, 2*burn, 90.0, 90.0)
+    e_right  = make_finger_edge(TR, BR, t, t, protrude_outward, False, burn, tol, 2*burn, 2*burn, 90.0, 90.0)
     e_bottom = make_finger_edge_angled(BR, BL, t, t, protrude_outward, True,
-                                       burn, tol, 0.0, 0.0, 90.0, 90.0, la)
-    e_left   = make_finger_edge(BL, TL, t, t, protrude_outward, False, burn, tol, 0.0, 0.0, 90.0, 90.0)
+                                       burn, tol, 2*burn, 2*burn, 90.0, 90.0, la)
+    e_left   = make_finger_edge(BL, TL, t, t, protrude_outward, False, burn, tol, 2*burn, 2*burn, 90.0, 90.0)
 
     edges = [e_top, e_right, e_bottom, e_left]
     outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])
@@ -249,10 +249,10 @@ def _make_test_strip(geom: TrapezoidGeometry, radius: float,
     TL = Point(0.0, 0.0); TR = Point(w, 0.0)
     BR = Point(w, h);     BL = Point(0.0, h)
 
-    e_top    = make_finger_edge(TL, TR, t, t, protrude_outward, True,  burn, tol, 0.0, 0.0, 90.0, 90.0)
-    e_right  = make_finger_edge(TR, BR, t, t, protrude_outward, False, burn, tol, 0.0, 0.0, 90.0, 90.0)
-    e_bottom = make_finger_edge(BR, BL, t, t, protrude_outward, True,  burn, tol, 0.0, 0.0, 90.0, 90.0)
-    e_left   = make_finger_edge(BL, TL, t, t, protrude_outward, False, burn, tol, 0.0, 0.0, 90.0, 90.0)
+    e_top    = make_finger_edge(TL, TR, t, t, protrude_outward, True,  burn, tol, 2*burn, 2*burn, 90.0, 90.0)
+    e_right  = make_finger_edge(TR, BR, t, t, protrude_outward, False, burn, tol, 2*burn, 2*burn, 90.0, 90.0)
+    e_bottom = make_finger_edge(BR, BL, t, t, protrude_outward, True,  burn, tol, 2*burn, 2*burn, 90.0, 90.0)
+    e_left   = make_finger_edge(BL, TL, t, t, protrude_outward, False, burn, tol, 2*burn, 2*burn, 90.0, 90.0)
 
     edges = [e_top, e_right, e_bottom, e_left]
     outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])

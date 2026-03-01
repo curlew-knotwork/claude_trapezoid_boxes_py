@@ -1346,6 +1346,29 @@ Coordinate transform from edge-local to panel-local space:
 > ℹ️ panel_y = term_start.y + local_x*edge_dir.y - local_y*edge_outward.y
 
 
+### 10.5a Finger Zone Boundary Constraint
+
+The staircase path draws each tab at `tab_width = fw + 2*burn`. For n tabs filling a zone of
+length `n*fw`, the total drawn length is `n*fw + 2*burn`. The final `2*burn` overruns `term_end`
+unless the zone ends at least `2*burn` before the panel corner vertex.
+
+`finger_termination_point` places `term_end` at distance `tangent_dist = corner_radius / tan(angle/2)`
+from the corner vertex. For 90° corners this reduces to `tangent_dist = corner_radius`.
+
+**Minimum constraint: `corner_radius ≥ 2*burn` on every finger edge.**
+- At 90°: `tangent_dist = corner_radius ≥ 2*burn`. Last tab back-face lands at or before the corner vertex.
+- At non-90° angle θ: `corner_radius ≥ 2*burn * tan(θ/2)`.
+- `corner_radius = 0` is forbidden on any panel with finger edges. It places `term_end` at the corner vertex with zero buffer; the last drawn tab exits the panel boundary by `2*burn`.
+
+Default wall/lid corner radius: `2 * burn` (minimum legal value, maximises finger zone length).
+BASE/SOUNDBOARD corner radius: `resolve_corner_radius()` result (3×T minimum), always >> 2*burn.
+
+**Proof enforcement (not verify_or_abort):** verify_or_abort cannot distinguish corner overrun
+from valid tab protrusions — both exceed nominal bounds in one direction. A dedicated proof
+must assert: for each finger edge, all path-segment endpoints in the along-edge direction lie
+within `burn` of `[term_start, term_end]`. With `corner_radius=0` this fails; with
+`corner_radius≥2*burn` it passes.
+
 ### 10.6 build_panel_outline()
 > ℹ️ def build_panel_outline(
 

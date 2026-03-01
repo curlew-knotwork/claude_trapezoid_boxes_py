@@ -59,17 +59,19 @@ def _lift_off_lid(geom: TrapezoidGeometry, radius: float,
     leg_ay = math.cos(math.radians(la))
 
     # Lid: true trapezoid outline, straight edges — no corner arcs (cut or etch).
-    # radius=0 so finger zone starts at corner vertex.
+    # corner_radius = 2*burn*tan(angle/2) gives tangent_dist = 2*burn at each corner.
     protrude_outward = False  # box mode: fingers inward
+    r_lea = 2 * burn * math.tan(math.radians(lea / 2))
+    r_sea = 2 * burn * math.tan(math.radians(sea / 2))
     from core.joints import make_finger_edge_angled
     e_short = make_finger_edge(TL, TR, t, t, protrude_outward, False,
-                               burn, tol, 0.0, 0.0, lea, lea)
+                               burn, tol, r_lea, r_lea, lea, lea)
     e_leg_r = make_finger_edge_angled(TR, BR, t, t, protrude_outward, False,
-                                      burn, tol, 0.0, 0.0, lea, sea, la)
+                                      burn, tol, r_lea, r_sea, lea, sea, la)
     e_long  = make_finger_edge(BR, BL, t, t, protrude_outward, False,
-                               burn, tol, 0.0, 0.0, sea, sea)
+                               burn, tol, r_sea, r_sea, sea, sea)
     e_leg_l = make_finger_edge_angled(BL, TL, t, t, protrude_outward, False,
-                                      burn, tol, 0.0, 0.0, sea, lea, la)
+                                      burn, tol, r_sea, r_lea, sea, lea, la)
 
     edges = [e_short, e_leg_r, e_long, e_leg_l]
     outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])
@@ -157,17 +159,20 @@ def _hinged_lid(geom: TrapezoidGeometry, radius: float,
     leg_ax = math.sin(math.radians(la))
     leg_ay = math.cos(math.radians(la))
 
-    # Lid: true trapezoid outline, straight edges — no corner arcs. radius=0.
+    # Lid: true trapezoid outline, straight edges — no corner arcs.
+    # corner_radius = 2*burn*tan(angle/2) gives tangent_dist = 2*burn at each corner.
     protrude_outward = False
+    r_lea = 2 * burn * math.tan(math.radians(lea / 2))
+    r_sea = 2 * burn * math.tan(math.radians(sea / 2))
     from core.joints import make_finger_edge_angled
     e_short = make_finger_edge(TL, TR, t, t, protrude_outward, False,
-                               burn, tol, 0.0, 0.0, lea, lea)
+                               burn, tol, r_lea, r_lea, lea, lea)
     e_leg_r = make_finger_edge_angled(TR, BR, t, t, protrude_outward, False,
-                                      burn, tol, 0.0, 0.0, lea, sea, la)
+                                      burn, tol, r_lea, r_sea, lea, sea, la)
     e_long  = make_finger_edge(BR, BL, t, t, protrude_outward, False,
-                               burn, tol, 0.0, 0.0, sea, sea)
+                               burn, tol, r_sea, r_sea, sea, sea)
     e_leg_l = make_finger_edge_angled(BL, TL, t, t, protrude_outward, False,
-                                      burn, tol, 0.0, 0.0, sea, lea, la)
+                                      burn, tol, r_sea, r_lea, sea, lea, la)
 
     edges = [e_short, e_leg_r, e_long, e_leg_l]
     outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])
