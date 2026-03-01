@@ -2,7 +2,7 @@
 
 ## Mantras
 
-- **Thinking is the job.** Proposing a spec update, writing a failing test, naming a design question — these are deliverables. Code and output generation are the smallest part. 4 units of thinking for every 1 unit of code/runs.
+- **Thinking is the job.** Proposing a spec update, writing a failing test, naming a design question — these are deliverables. Code and output generation are the smallest part. 10 units of thinking for every 1 unit of code/runs.
 - **Half baked is worse than not baked.** A broken test cut, a decoupled verification script, a workaround validation — each gives false confidence and costs more than nothing.
 - **Think twice, cut once.** Done well, upfront thinking pays back many times. Done poorly, it doesn't. The investment is only worthwhile if the thinking is genuinely rigorous.
 - **Target: ZERO FAILURES.** Not "low failure rate." Zero. Every failure is a process failure.
