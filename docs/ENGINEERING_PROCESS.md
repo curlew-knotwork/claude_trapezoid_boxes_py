@@ -8,6 +8,11 @@
   and iterating. Done well, upfront thinking pays back many times over. Done poorly, it doesn't.
   The investment is only worthwhile if the thinking is genuinely rigorous.
 - **Target: ZERO FAILURES.** Not "low failure rate." Zero. Every failure is a process failure.
+- **Name things for what they are.** When naming anything — variable, function, type, file,
+  concept — ask: "what is it? what is its true purpose?" The answer makes the name obvious.
+  Never name for implementation detail or physical process when the purpose is clearer.
+  Example: a mark showing where finger zones end is a `FINGER_ZONE_BOUNDARY`, not an "etch"
+  or "score line."
 - **Treat Claude as an adult.** Checklists and gates produce compliance theater, not judgment.
   Principles are internalized and applied with genuine thought — proactive, self-correcting,
   raising design questions before being asked.
