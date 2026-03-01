@@ -1,5 +1,7 @@
 # claude_trapezoid_boxes_py
 
+## trapezoid_boxes (.py)
+
 Parametric laser-cut box generator for:
 - generic: trapezoidal boxes, or
 - special case: trapezoidal music instrument bodies (stringed instruments, drums, etc.).
