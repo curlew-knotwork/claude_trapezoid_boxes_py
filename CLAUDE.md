@@ -4,7 +4,7 @@
 - Spec:     docs/SPECIFICATION.md
 - Process:  docs/ENGINEERING_PROCESS.md  ← mantras, sparring protocol, anti-patterns
 - Proofs:   proofs/  (run before claiming correctness)
-- Patterns: memory/FAILURE_PATTERNS.md   ← check before starting any task
+- Patterns: docs/FAILURE_PATTERNS.md     ← check before starting any task
 - Style:    PEP8, strict typing, ruff + mypy clean
 
 ## BURN MODEL

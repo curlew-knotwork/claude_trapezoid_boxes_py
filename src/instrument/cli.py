@@ -25,7 +25,6 @@ from constants import (
     RTRAP_LONG_TO_BODY_RATIO, RTRAP_ASPECT_RATIO, RTRAP_CORNER_R_MM,
     RTRAP_MAX_R_EDGE_FRACTION,
     ERR_VALIDATION_LONG_SHORT_ORDER, ERR_VALIDATION_THICKNESS_TOO_LARGE,
-    ERR_VALIDATION_FINGER_TOO_THIN,
     ERR_VALIDATION_STRUCT_TAB_TOO_THIN, ERR_VALIDATION_TEST_STRIP_TOO_TALL,
     ERR_VALIDATION_SOUNDHOLE_TOO_TALL, ERR_VALIDATION_SOUNDHOLE_LONG_RATIO,
     ERR_VALIDATION_SOUNDHOLE_ASPECT, ERR_VALIDATION_SOUNDHOLE_RADIUS,
@@ -289,19 +288,6 @@ def validate_config(config: InstrumentConfig) -> list[dict]:
     except Exception as e:
         err("VALIDATION_GEOMETRY", str(e))
         return errors
-
-    # Wall-to-wall finger zone: depth_outer - 2*corner_radius must fit at least 1 finger
-    from core.radii import resolve_corner_radius
-    radius = resolve_corner_radius(c, geom)
-    ww_avail = geom.depth_outer - 2 * radius
-    ww_min   = c.thickness + 2 * c.burn
-    if ww_avail < ww_min:
-        max_r = (geom.depth_outer - ww_min) / 2
-        err(ERR_VALIDATION_FINGER_TOO_THIN,
-            f"Wall-to-wall finger zone is only {ww_avail:.3f}mm "
-            f"(depth_outer={geom.depth_outer:.3f}mm minus 2×corner_radius={radius:.3f}mm), "
-            f"but need ≥{ww_min:.3f}mm for one finger joint. "
-            f"Fix: increase --depth, or set --corner-radius ≤ {max_r:.2f}mm.")
 
     fw = c.finger_width if c.finger_width else AUTO_FINGER_WIDTH_FACTOR * c.thickness
     W_over   = c.thickness * math.tan(math.radians(geom.leg_angle_deg))

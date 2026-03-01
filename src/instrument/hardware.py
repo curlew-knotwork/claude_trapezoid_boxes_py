@@ -29,7 +29,8 @@ def make_neck_block(config: InstrumentConfig, geom: TrapezoidGeometry) -> Panel:
     return Panel(
         type=PanelType.NECK_BLOCK, name="NECK_BLOCK",
         outline=outline, finger_edges=[],
-        holes=[], score_lines=[], marks=marks,
+        holes=[], score_lines=[], finger_zone_boundaries=[],
+        marks=marks,
         grain_angle_deg=0.0,
         width=w, height=h,
     )
@@ -53,7 +54,8 @@ def make_tail_block(config: InstrumentConfig, geom: TrapezoidGeometry) -> Panel:
     return Panel(
         type=PanelType.TAIL_BLOCK, name="TAIL_BLOCK",
         outline=outline, finger_edges=[],
-        holes=[], score_lines=[], marks=marks,
+        holes=[], score_lines=[], finger_zone_boundaries=[],
+        marks=marks,
         grain_angle_deg=0.0,
         width=w, height=h,
     )

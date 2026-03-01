@@ -135,6 +135,18 @@ def _render_panel(panel: Panel, origin: Point, config: CommonConfig) -> str:
                     f'stroke-width="{_f(cut_stroke)}"/>'
                 )
 
+    # Finger zone boundaries (non-cut arcs on BASE showing where finger zones end)
+    for arc in panel.finger_zone_boundaries:
+        la = 1 if arc.large_arc else 0
+        sw = 1 if arc.clockwise else 0
+        out.append(
+            f'<path d="M {tx(arc.start.x)} {ty(arc.start.y)} '
+            f'A {_f(arc.radius)} {_f(arc.radius)} 0 {la} {sw} '
+            f'{tx(arc.end.x)} {ty(arc.end.y)}" '
+            f'stroke="{score_colour}" fill="none" '
+            f'stroke-width="{_f(SVG_HAIRLINE_MM)}" {score_dash_attr}/>'
+        )
+
     # Score lines
     for sl in panel.score_lines:
         out.append(

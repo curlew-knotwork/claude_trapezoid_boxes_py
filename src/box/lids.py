@@ -12,8 +12,9 @@ from core.models import (
     BoxConfig, LidType, ClosedPath,
 )
 from core.trapezoid import TrapezoidGeometry
-from core.radii import corner_arc_segments
-from core.joints import make_finger_edge, build_panel_outline, build_plain_outline
+from core.joints import (
+    make_finger_edge, build_panel_outline_straight_corners, build_plain_outline,
+)
 
 
 def make_lid(
@@ -57,25 +58,21 @@ def _lift_off_lid(geom: TrapezoidGeometry, radius: float,
     leg_ax = math.sin(math.radians(la))
     leg_ay = math.cos(math.radians(la))
 
-    arc_TL = corner_arc_segments(TL, Point(leg_ax, -leg_ay), Point(1.0, 0.0),  radius, lea)
-    arc_TR = corner_arc_segments(TR, Point(1.0, 0.0), Point(leg_ax, leg_ay),   radius, lea)
-    arc_BR = corner_arc_segments(BR, Point(leg_ax, leg_ay), Point(-1.0, 0.0),  radius, sea)
-    arc_BL = corner_arc_segments(BL, Point(-1.0, 0.0), Point(-leg_ax, -leg_ay), radius, sea)
-
+    # Lid: true trapezoid outline, straight edges — no corner arcs (cut or etch).
+    # radius=0 so finger zone starts at corner vertex.
     protrude_outward = False  # box mode: fingers inward
-    e_short = make_finger_edge(TL, TR, t, t, protrude_outward, False,
-                               burn, tol, radius, radius, lea, lea)
     from core.joints import make_finger_edge_angled
+    e_short = make_finger_edge(TL, TR, t, t, protrude_outward, False,
+                               burn, tol, 0.0, 0.0, lea, lea)
     e_leg_r = make_finger_edge_angled(TR, BR, t, t, protrude_outward, False,
-                                      burn, tol, radius, radius, lea, sea, la)
+                                      burn, tol, 0.0, 0.0, lea, sea, la)
     e_long  = make_finger_edge(BR, BL, t, t, protrude_outward, False,
-                               burn, tol, radius, radius, sea, sea)
+                               burn, tol, 0.0, 0.0, sea, sea)
     e_leg_l = make_finger_edge_angled(BL, TL, t, t, protrude_outward, False,
-                                      burn, tol, radius, radius, sea, lea, la)
+                                      burn, tol, 0.0, 0.0, sea, lea, la)
 
     edges = [e_short, e_leg_r, e_long, e_leg_l]
-    corner_arcs = [arc_TL, arc_TR, arc_BR, arc_BL]
-    outline = build_panel_outline(edges, corner_arcs)
+    outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])
 
     marks = [
         Mark(MarkType.GRAIN_ARROW, Point(lo / 2, L / 2), "", 0.0),
@@ -85,7 +82,9 @@ def _lift_off_lid(geom: TrapezoidGeometry, radius: float,
     return Panel(
         type=PanelType.LID, name="LID",
         outline=outline, finger_edges=edges,
-        holes=[], score_lines=[], marks=marks,
+        holes=[], score_lines=[],
+        finger_zone_boundaries=[],
+        marks=marks,
         grain_angle_deg=0.0,
         width=lo, height=L,
     )
@@ -130,7 +129,9 @@ def _sliding_lid(geom: TrapezoidGeometry, radius: float,
     return Panel(
         type=PanelType.LID, name="LID",
         outline=outline, finger_edges=[],
-        holes=[], score_lines=[], marks=marks,
+        holes=[], score_lines=[],
+        finger_zone_boundaries=[],
+        marks=marks,
         grain_angle_deg=0.0,
         width=lid_w, height=lid_h,
     )
@@ -156,25 +157,20 @@ def _hinged_lid(geom: TrapezoidGeometry, radius: float,
     leg_ax = math.sin(math.radians(la))
     leg_ay = math.cos(math.radians(la))
 
-    arc_TL = corner_arc_segments(TL, Point(leg_ax, -leg_ay), Point(1.0, 0.0),  radius, lea)
-    arc_TR = corner_arc_segments(TR, Point(1.0, 0.0), Point(leg_ax, leg_ay),   radius, lea)
-    arc_BR = corner_arc_segments(BR, Point(leg_ax, leg_ay), Point(-1.0, 0.0),  radius, sea)
-    arc_BL = corner_arc_segments(BL, Point(-1.0, 0.0), Point(-leg_ax, -leg_ay), radius, sea)
-
+    # Lid: true trapezoid outline, straight edges — no corner arcs. radius=0.
     protrude_outward = False
     from core.joints import make_finger_edge_angled
     e_short = make_finger_edge(TL, TR, t, t, protrude_outward, False,
-                               burn, tol, radius, radius, lea, lea)
+                               burn, tol, 0.0, 0.0, lea, lea)
     e_leg_r = make_finger_edge_angled(TR, BR, t, t, protrude_outward, False,
-                                      burn, tol, radius, radius, lea, sea, la)
+                                      burn, tol, 0.0, 0.0, lea, sea, la)
     e_long  = make_finger_edge(BR, BL, t, t, protrude_outward, False,
-                               burn, tol, radius, radius, sea, sea)
+                               burn, tol, 0.0, 0.0, sea, sea)
     e_leg_l = make_finger_edge_angled(BL, TL, t, t, protrude_outward, False,
-                                      burn, tol, radius, radius, sea, lea, la)
+                                      burn, tol, 0.0, 0.0, sea, lea, la)
 
     edges = [e_short, e_leg_r, e_long, e_leg_l]
-    corner_arcs = [arc_TL, arc_TR, arc_BR, arc_BL]
-    outline = build_panel_outline(edges, corner_arcs)
+    outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])
 
     # Hinge holes: count = floor(long_outer / 80), min 2
     hinge_count = max(2, int(lo / HINGE_SPACING_MM))
@@ -192,7 +188,9 @@ def _hinged_lid(geom: TrapezoidGeometry, radius: float,
     return Panel(
         type=PanelType.LID, name="LID",
         outline=outline, finger_edges=edges,
-        holes=holes, score_lines=[], marks=marks,
+        holes=holes, score_lines=[],
+        finger_zone_boundaries=[],
+        marks=marks,
         grain_angle_deg=0.0,
         width=lo, height=L,
     )

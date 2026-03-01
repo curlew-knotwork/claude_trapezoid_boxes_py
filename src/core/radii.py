@@ -27,10 +27,6 @@ def resolve_corner_radius(config: "CommonConfig", geom: "TrapezoidGeometry") -> 
         raise ValueError(
             f"corner_radius ({r}mm) must be < short_outer/2 ({geom.short_outer/2:.3f}mm)."
         )
-    if r >= geom.depth_outer / 2:
-        raise ValueError(
-            f"corner_radius ({r}mm) must be < depth_outer/2 ({geom.depth_outer/2:.3f}mm)."
-        )
     return r
 
 

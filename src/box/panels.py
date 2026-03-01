@@ -31,7 +31,7 @@ from core.trapezoid import TrapezoidGeometry
 from core.radii import corner_arc_segments
 from core.joints import (
     make_finger_edge, make_finger_edge_angled,
-    build_panel_outline, build_plain_outline,
+    build_panel_outline_straight_corners, build_plain_outline,
 )
 from box import lids
 
@@ -95,49 +95,33 @@ def _make_base(geom: TrapezoidGeometry, radius: float,
     # BL corner: arriving from BR  (direction: -1, 0)
     #            departing toward TL (direction: -leg_ax, -leg_ay)
 
-    # Corner arcs (4 corners in CW order starting from TL)
-    arc_TL = corner_arc_segments(TL,
-        Point(leg_ax, -leg_ay),   # arriving direction (BL→TL travels +leg_ax,-leg_ay)
-        Point(1.0, 0.0),           # departing direction (TL→TR travels +1, 0)
-        radius, lea)
-    arc_TR = corner_arc_segments(TR,
-        Point(1.0, 0.0),           # arriving (TL→TR)
-        Point(leg_ax, leg_ay),     # departing (TR→BR)
-        radius, lea)
-    arc_BR = corner_arc_segments(BR,
-        Point(leg_ax, leg_ay),     # arriving (TR→BR)
-        Point(-1.0, 0.0),          # departing (BR→BL)
-        radius, sea)
-    arc_BL = corner_arc_segments(BL,
-        Point(-1.0, 0.0),          # arriving (BR→BL)
-        Point(-leg_ax, -leg_ay),   # departing (BL→TL)
-        radius, sea)
+    # Corner arcs — computed for finger zone boundary markers (etch only, not cut)
+    _, arc_TL, _ = corner_arc_segments(TL,
+        Point(leg_ax, -leg_ay), Point(1.0, 0.0), radius, lea)
+    _, arc_TR, _ = corner_arc_segments(TR,
+        Point(1.0, 0.0), Point(leg_ax, leg_ay), radius, lea)
+    _, arc_BR, _ = corner_arc_segments(BR,
+        Point(leg_ax, leg_ay), Point(-1.0, 0.0), radius, sea)
+    _, arc_BL, _ = corner_arc_segments(BL,
+        Point(-1.0, 0.0), Point(-leg_ax, -leg_ay), radius, sea)
 
     # BASE edges: tabs. Walls have slots. Finger depth = wall thickness.
-    # short_top: TL→TR  angles: lea/lea
     e_short = make_finger_edge(
         TL, TR, t, t, protrude_outward, False,
         burn, tol, radius, radius, lea, lea)
-
-    # leg_right: TR→BR  angles: lea/sea
     e_leg_r = make_finger_edge_angled(
         TR, BR, t, t, protrude_outward, False,
         burn, tol, radius, radius, lea, sea, la)
-
-    # long_bottom: BR→BL  angles: sea/sea
     e_long = make_finger_edge(
         BR, BL, t, t, protrude_outward, False,
         burn, tol, radius, radius, sea, sea)
-
-    # leg_left: BL→TL  angles: sea/lea
     e_leg_l = make_finger_edge_angled(
         BL, TL, t, t, protrude_outward, False,
         burn, tol, radius, radius, sea, lea, la)
 
     edges = [e_short, e_leg_r, e_long, e_leg_l]
-    corner_arcs = [arc_TL, arc_TR, arc_BR, arc_BL]
-
-    outline = build_panel_outline(edges, corner_arcs)
+    # Straight trapezoid outline; corner arcs are etch marks only
+    outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])
 
     marks = [
         Mark(MarkType.GRAIN_ARROW, Point(lo / 2, L / 2), "", 0.0),
@@ -148,7 +132,9 @@ def _make_base(geom: TrapezoidGeometry, radius: float,
     return Panel(
         type=PanelType.BASE, name="BASE",
         outline=outline, finger_edges=edges,
-        holes=[], score_lines=[], marks=marks,
+        holes=[], score_lines=[],
+        finger_zone_boundaries=[arc_TL, arc_TR, arc_BR, arc_BL],
+        marks=marks,
         grain_angle_deg=0.0,
         width=lo, height=L,
     )
@@ -221,29 +207,23 @@ def _make_rect_wall(
     BR = Point(w,   h)
     BL = Point(0.0, h)
 
-    # Corner arcs at all four 90° corners
-    arc_TL = corner_arc_segments(TL, Point(0.0, -1.0), Point(1.0,  0.0), radius, 90.0)
-    arc_TR = corner_arc_segments(TR, Point(1.0,  0.0), Point(0.0,  1.0), radius, 90.0)
-    arc_BR = corner_arc_segments(BR, Point(0.0,  1.0), Point(-1.0, 0.0), radius, 90.0)
-    arc_BL = corner_arc_segments(BL, Point(-1.0, 0.0), Point(0.0, -1.0), radius, 90.0)
-
-    # Edges in CW order: top (TL→TR), right (TR→BR), bottom (BR→BL), left (BL→TL)
+    # Wall panels: plain rectangles — no corner arcs (cut or etch).
+    # radius=0 → full depth_outer available for wall-to-wall finger zone.
     e_top = make_finger_edge(
         TL, TR, t, t, protrude_outward, top_slotted,
-        burn, tol, radius, radius, 90.0, 90.0)
+        burn, tol, 0.0, 0.0, 90.0, 90.0)
     e_right = make_finger_edge(
         TR, BR, t, t, protrude_outward, False,
-        burn, tol, radius, radius, 90.0, 90.0)
+        burn, tol, 0.0, 0.0, 90.0, 90.0)
     e_bottom = make_finger_edge(
         BR, BL, t, t, protrude_outward, bottom_slotted,
-        burn, tol, radius, radius, 90.0, 90.0)
+        burn, tol, 0.0, 0.0, 90.0, 90.0)
     e_left = make_finger_edge(
         BL, TL, t, t, protrude_outward, False,
-        burn, tol, radius, radius, 90.0, 90.0)
+        burn, tol, 0.0, 0.0, 90.0, 90.0)
 
     edges = [e_top, e_right, e_bottom, e_left]
-    corner_arcs = [arc_TL, arc_TR, arc_BR, arc_BL]
-    outline = build_panel_outline(edges, corner_arcs)
+    outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])
 
     marks = [
         Mark(MarkType.GRAIN_ARROW, Point(w / 2, h / 2), "", 0.0),
@@ -255,7 +235,9 @@ def _make_rect_wall(
     return Panel(
         type=ptype, name=name,
         outline=outline, finger_edges=edges,
-        holes=[], score_lines=[], marks=marks,
+        holes=[], score_lines=[],
+        finger_zone_boundaries=[],
+        marks=marks,
         grain_angle_deg=0.0,
         width=w, height=h,
     )
@@ -276,25 +258,20 @@ def _make_leg_wall(
     BR = Point(w,   h)
     BL = Point(0.0, h)
 
-    arc_TL = corner_arc_segments(TL, Point(0.0, -1.0), Point(1.0,  0.0), radius, 90.0)
-    arc_TR = corner_arc_segments(TR, Point(1.0,  0.0), Point(0.0,  1.0), radius, 90.0)
-    arc_BR = corner_arc_segments(BR, Point(0.0,  1.0), Point(-1.0, 0.0), radius, 90.0)
-    arc_BL = corner_arc_segments(BL, Point(-1.0, 0.0), Point(0.0, -1.0), radius, 90.0)
-
+    # Wall panels: plain rectangles — no corner arcs (cut or etch). radius=0.
     e_top    = make_finger_edge(TL, TR, t, t, protrude_outward, True,
-                                burn, tol, radius, radius, 90.0, 90.0)
+                                burn, tol, 0.0, 0.0, 90.0, 90.0)
     e_right  = make_finger_edge(TR, BR, t, t, protrude_outward, False,
-                                burn, tol, radius, radius, 90.0, 90.0)
+                                burn, tol, 0.0, 0.0, 90.0, 90.0)
     # Bottom edge: angled joint correction (mates with BASE leg edge)
     e_bottom = make_finger_edge_angled(BR, BL, t, t, protrude_outward, True,
-                                       burn, tol, radius, radius, 90.0, 90.0,
+                                       burn, tol, 0.0, 0.0, 90.0, 90.0,
                                        leg_angle_deg)
     e_left   = make_finger_edge(BL, TL, t, t, protrude_outward, False,
-                                burn, tol, radius, radius, 90.0, 90.0)
+                                burn, tol, 0.0, 0.0, 90.0, 90.0)
 
     edges = [e_top, e_right, e_bottom, e_left]
-    corner_arcs = [arc_TL, arc_TR, arc_BR, arc_BL]
-    outline = build_panel_outline(edges, corner_arcs)
+    outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])
 
     marks = [
         Mark(MarkType.GRAIN_ARROW, Point(w / 2, h / 2), "", 0.0),
@@ -306,7 +283,9 @@ def _make_leg_wall(
     return Panel(
         type=ptype, name=name,
         outline=outline, finger_edges=edges,
-        holes=[], score_lines=[], marks=marks,
+        holes=[], score_lines=[],
+        finger_zone_boundaries=[],
+        marks=marks,
         grain_angle_deg=0.0,
         width=w, height=h,
     )
@@ -325,24 +304,18 @@ def _make_test_strip(geom: TrapezoidGeometry, radius: float,
     BR = Point(w,   h)
     BL = Point(0.0, h)
 
-    arc_TL = corner_arc_segments(TL, Point(0.0, -1.0), Point(1.0,  0.0), radius, 90.0)
-    arc_TR = corner_arc_segments(TR, Point(1.0,  0.0), Point(0.0,  1.0), radius, 90.0)
-    arc_BR = corner_arc_segments(BR, Point(0.0,  1.0), Point(-1.0, 0.0), radius, 90.0)
-    arc_BL = corner_arc_segments(BL, Point(-1.0, 0.0), Point(0.0, -1.0), radius, 90.0)
-
-    # Bottom edge matches WALL_LONG bottom joint profile (slotted)
+    # TEST_STRIP: plain rectangle, no corner arcs. radius=0.
     e_top    = make_finger_edge(TL, TR, t, t, protrude_outward, True,
-                                burn, tol, radius, radius, 90.0, 90.0)
+                                burn, tol, 0.0, 0.0, 90.0, 90.0)
     e_right  = make_finger_edge(TR, BR, t, t, protrude_outward, False,
-                                burn, tol, radius, radius, 90.0, 90.0)
+                                burn, tol, 0.0, 0.0, 90.0, 90.0)
     e_bottom = make_finger_edge(BR, BL, t, t, protrude_outward, True,
-                                burn, tol, radius, radius, 90.0, 90.0)
+                                burn, tol, 0.0, 0.0, 90.0, 90.0)
     e_left   = make_finger_edge(BL, TL, t, t, protrude_outward, False,
-                                burn, tol, radius, radius, 90.0, 90.0)
+                                burn, tol, 0.0, 0.0, 90.0, 90.0)
 
     edges = [e_top, e_right, e_bottom, e_left]
-    corner_arcs = [arc_TL, arc_TR, arc_BR, arc_BL]
-    outline = build_panel_outline(edges, corner_arcs)
+    outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])
 
     marks = [
         Mark(MarkType.LABEL, Point(w / 2, h / 2), "TEST STRIP", 0.0),
@@ -351,7 +324,9 @@ def _make_test_strip(geom: TrapezoidGeometry, radius: float,
     return Panel(
         type=PanelType.TEST_STRIP, name="TEST_STRIP",
         outline=outline, finger_edges=edges,
-        holes=[], score_lines=[], marks=marks,
+        holes=[], score_lines=[],
+        finger_zone_boundaries=[],
+        marks=marks,
         grain_angle_deg=0.0,
         width=w, height=h,
     )

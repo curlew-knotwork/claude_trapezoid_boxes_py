@@ -282,6 +282,44 @@ def build_panel_outline(
     return ClosedPath(tuple(all_segs))
 
 
+def build_panel_outline_straight_corners(
+    edges:           list[FingerEdge],
+    corner_vertices: list[Point],
+) -> ClosedPath:
+    """Build a closed panel outline with straight (non-arc) corners.
+
+    corner_vertices[i] is the geometric corner between edges[i-1] and edges[i].
+    The path goes: ... finger_segs[i-1] → Line(→ corner_vertex) →
+                       Line(→ edges[i].term_start) → finger_segs[i] → ...
+    Zero-length lines are omitted.
+    """
+    n = len(edges)
+    assert len(corner_vertices) == n
+
+    all_segs: list[PathSegment] = []
+
+    for i in range(n):
+        vertex   = corner_vertices[i]
+        prev_end = _finger_edge_last_point(edges[i - 1])  # works for i=0 via [-1]
+
+        if not (nearly_equal(prev_end.x, vertex.x) and nearly_equal(prev_end.y, vertex.y)):
+            all_segs.append(Line(prev_end, vertex))
+
+        term_start = edges[i].term_start
+        if not (nearly_equal(vertex.x, term_start.x) and nearly_equal(vertex.y, term_start.y)):
+            all_segs.append(Line(vertex, term_start))
+
+        all_segs.extend(finger_edge_to_path_segments(edges[i]))
+
+    if all_segs:
+        first_pt = _get_segment_start(all_segs[0])
+        last_pt  = _get_segment_end(all_segs[-1])
+        if not (nearly_equal(first_pt.x, last_pt.x) and nearly_equal(first_pt.y, last_pt.y)):
+            all_segs.append(Line(last_pt, first_pt))
+
+    return ClosedPath(tuple(all_segs))
+
+
 def _finger_edge_last_point(edge: FingerEdge) -> Point:
     """Return the last point of a finger edge's path segments."""
     segs = finger_edge_to_path_segments(edge)

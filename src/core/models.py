@@ -192,9 +192,10 @@ class Panel:
     name:           str
     outline:        ClosedPath
     finger_edges:   list[FingerEdge]
-    holes:          list[Hole]
-    score_lines:    list[Line]
-    marks:          list[Mark]
+    holes:                  list[Hole]
+    score_lines:            list[Line]
+    finger_zone_boundaries: list[Arc]   # non-cut arcs marking finger zone limits at BASE corners
+    marks:                  list[Mark]
     grain_angle_deg: float
     width:          float      # nominal outer width (for layout packing)
     height:         float      # nominal outer height (for layout packing)

@@ -42,7 +42,8 @@ def make_base_kerf_strips(config: InstrumentConfig, geom: TrapezoidGeometry) -> 
         strips.append(Panel(
             type=PanelType.KERF_STRIP, name=f"KERF_BASE_{label}",
             outline=outline, finger_edges=[],
-            holes=[], score_lines=[], marks=marks,
+            holes=[], score_lines=[], finger_zone_boundaries=[],
+            marks=marks,
             grain_angle_deg=0.0,
             width=w, height=h,
         ))
@@ -73,7 +74,8 @@ def make_soundboard_kerf_strips(config: InstrumentConfig, geom: TrapezoidGeometr
         strips.append(Panel(
             type=PanelType.KERF_STRIP, name=f"KERF_TOP_{label}",
             outline=outline, finger_edges=[],
-            holes=[], score_lines=[], marks=marks,
+            holes=[], score_lines=[], finger_zone_boundaries=[],
+            marks=marks,
             grain_angle_deg=0.0,
             width=w, height=h,
         ))
@@ -102,7 +104,8 @@ def make_kerf_fillets(config: InstrumentConfig, geom: TrapezoidGeometry) -> list
         fillets.append(Panel(
             type=PanelType.KERF_FILLET, name=f"KERF_FILLET_{label}",
             outline=outline, finger_edges=[],
-            holes=[], score_lines=[], marks=marks,
+            holes=[], score_lines=[], finger_zone_boundaries=[],
+            marks=marks,
             grain_angle_deg=0.0,
             width=kw, height=h,
         ))
