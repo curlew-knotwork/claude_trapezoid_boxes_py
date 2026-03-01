@@ -200,6 +200,6 @@ The project-level `CLAUDE.md` is version-controlled and documents the laser-cutt
 | Geometry proof scripts | ✅ All 7 passing (171 checks) |
 | Build operator manual | ✅ Complete |
 | Test strip guide | ✅ Complete (3 audits, all errors corrected) |
-| trapezoid_boxes.py implementation | ⬜ Not started |
+| trapezoid_boxes.py implementation | ✅ Complete (box + instrument modes, --extract-config, --list-presets) |
 | SVG output validation | ⬜ Pending implementation |
 | Physical cut validation | ⬜ Pending first cut |

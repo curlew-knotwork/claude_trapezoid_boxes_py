@@ -264,10 +264,10 @@ def write(
 def extract_config(svg_path: Path) -> str:
     """Open SVG, parse with xml.etree.ElementTree, return text of <trapezoidbox:config> CDATA."""
     import xml.etree.ElementTree as ET
-    ns = {"trapezoidbox": SVG_TRAPEZOIDBOX_NS}
+    ns = {"trapezoidbox": SVG_TRAPEZOIDBOX_NS, "svg": "http://www.w3.org/2000/svg"}
     tree = ET.parse(svg_path)
     root = tree.getroot()
-    meta = root.find("metadata")
+    meta = root.find("svg:metadata", ns)
     if meta is None:
         raise ValueError(f"Not a trapezoidbox SVG or metadata absent: {svg_path}")
     cfg = meta.find("trapezoidbox:config", ns)
