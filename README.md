@@ -200,4 +200,5 @@ The project-level `CLAUDE.md` is version-controlled and documents the laser-cutt
 | Test strip guide | ✅ Complete (3 audits, all errors corrected) |
 | trapezoid_boxes.py implementation | ✅ Complete (box + instrument modes, --extract-config, --list-presets) |
 | SVG output validation | ✅ Complete (verify_or_abort: coords, closure, overlap) |
+| Input validation | ✅ Complete (wall-to-wall finger zone, structural tab, groove angle, all dims) |
 | Physical cut validation | ⬜ Pending first cut |

@@ -1049,15 +1049,34 @@ For DimMode.INNER: add 2*thickness to each dimension before computing geometry.
 ## 9. core/radii.py
 Corner arc geometry and finger termination points. No finger joint logic.
 
+### Corner Arc Model — Three Distinct Concepts
+
+1. **BASE cut outline**: true trapezoid, four straight edges. Optional tiny safety chamfer at each
+   corner (cut, ≤2mm) to prevent sharp points/splintering. NOT the finger-zone arc.
+
+2. **Finger zone boundary**: tangent distance = R / tan(angle/2) from each corner vertex.
+   Pure calculation — controls where tabs start and stop. R is still a meaningful parameter
+   (default 3×T, fixed mm, not a ratio).
+
+3. **Corner arc etch**: the arc at each BASE corner drawn as a non-cut score/etch path.
+   Serves as a visual marker for the finger zone boundary — useful for SVG inspection and
+   human/tool discussion. BASE only. Not on wall panels. Not on lids.
+
+Wall panels: plain rectangles, no corner arcs (cut or etch). Full depth_outer available for
+wall-to-wall finger zones. Removing arcs from walls is not a compromise — the assembled
+wall corners are inside the box and have no visible or structural need for rounding.
+
+Lid panels: plain trapezoids/rectangles. Optional safety chamfer matching BASE. No etch arcs.
+
 ### 9.1 Corner Radius Resolution
 auto_corner_radius(thickness: float) -&gt; float — returns 3 × thickness, rounded to nearest mm, minimum MIN_CORNER_RADIUS_MM = 5.0mm.
 
-resolve_corner_radius(config: CommonConfig, geom: TrapezoidGeometry) -&gt; float — returns user-specified corner_radius if provided; otherwise auto_corner_radius(thickness). Validates result &lt; short_outer / 2 and &lt; depth_outer / 2; raises ValueError if not.
+resolve_corner_radius(config: CommonConfig, geom: TrapezoidGeometry) -&gt; float — returns user-specified corner_radius if provided; otherwise auto_corner_radius(thickness). R must be &lt; short_outer / 2; raises ValueError if not. (depth_outer / 2 constraint removed — wall panels no longer use R.)
 
 ### 9.2 Corner Arc Segments
 corner_arc_segments(vertex: Point, edge_a_dir: Point, edge_b_dir: Point, corner_radius: float, internal_angle_deg: float) -&gt; tuple[Point, Arc, Point]
 
-Returns (arc_start, arc, arc_end). edge_a_dir and edge_b_dir are unit vectors pointing away from the corner along each edge.
+Returns (arc_start, arc, arc_end). Used to generate etch marks on BASE corners — not cut paths. edge_a_dir and edge_b_dir are unit vectors pointing away from the corner along each edge.
 
 Arc centre offset from vertex along inward bisector:
 
@@ -1693,10 +1712,10 @@ extract_config(svg_path: Path) -&gt; str — opens SVG, parses with xml.etree.El
 ### 16.1 Panels Generated
 | Panel | Description |
 |---|---|
-| BASE | Trapezoid. Finger tabs on all four edges. Corner radii applied. Fingers INWARD (hardcoded). Slots in walls. |
-| WALL_LONG | Rectangle long_outer × depth_outer. Finger joints all four edges. Slots on top/bottom, fingers on ends. |
-| WALL_SHORT | Rectangle short_outer × depth_outer. Same joint arrangement as WALL_LONG. |
-| WALL_LEG_LEFT | Rectangle leg_length × depth_outer. Same joint arrangement. |
+| BASE | True trapezoid outline (straight edges). Finger tabs on all four edges. Corner arc etch marks (non-cut) at each corner marking the finger zone boundary. Optional tiny safety chamfer (≤2mm cut) at corners. Fingers INWARD (hardcoded). Slots in walls. |
+| WALL_LONG | Rectangle long_outer × depth_outer. Plain rectangle — no corner arcs. Finger joints all four edges. Slots on top/bottom, fingers on ends. |
+| WALL_SHORT | Rectangle short_outer × depth_outer. Plain rectangle — no corner arcs. Same joint arrangement as WALL_LONG. |
+| WALL_LEG_LEFT | Rectangle leg_length × depth_outer. Plain rectangle — no corner arcs. Same joint arrangement. |
 | WALL_LEG_RIGHT | Identical to WALL_LEG_LEFT for isosceles (dataclasses.replace copy). |
 | LID | See lid types below. |
 | TEST_STRIP | Always generated. 60mm × (3 × depth). One edge matches WALL_LONG bottom joint profile. |
@@ -1712,7 +1731,7 @@ Finger depth rule: depth is always the mating panel thickness, not own panel thi
 | Lid type | Description |
 |---|---|
 | none | No lid panel generated. |
-| lift-off | Trapezoid identical to BASE shape. Finger tabs on all four edges matching wall top edges. Convention: fingers on LID, slots on wall top edges — symmetric with BASE. |
+| lift-off | True trapezoid (straight edges, optional safety chamfer). Finger tabs on all four edges matching wall top edges. Convention: fingers on LID, slots on wall top edges — symmetric with BASE. No corner arc etches. |
 | sliding | **Trapezoid panel sized to slide into grooves in both leg walls. Panel width = short_outer + 2*(thickness+tolerance). Grooves: full-length through-slots, top inner edge of each leg wall, width = lid_thickness+tolerance, depth = thickness+tolerance. Lid slides in from long-side opening.** |
 | hinged | Trapezoid lid. Barrel hinge holes in lid and top edge of WALL_LONG. Count = floor(long_outer/80), min 2. Diameter = hinge_diameter. |
 | flap | As hinged but without hinge holes. Score line along WALL_LONG top edge as fold guide. |
@@ -1792,11 +1811,11 @@ Finger depth rule: depth is always the mating panel thickness, not own panel thi
 ### 17.1 Panels Generated
 | Panel | Description |
 |---|---|
-| BASE | Trapezoid. Finger joints all four edges. Corner radii. Fingers OUTWARD by default. |
-| WALL_LONG | Rectangle long_outer × depth_outer. Finger joints all edges. Optional strap pin holes. |
-| WALL_SHORT | Rectangle short_outer × depth_outer. Finger joints all edges. |
-| WALL_LEG_LEFT/RIGHT | Rectangle leg_length × depth_outer. Finger joints all edges. Leg-to-base joints use make_finger_edge_angled(). |
-| SOUNDBOARD | Trapezoid. NO finger joints — build_plain_outline() only. Corner radii matching BASE. Sound hole if --soundhole-type. Brace score lines if --braces. Grain arrow always shown. |
+| BASE | True trapezoid outline (straight edges). Finger joints all four edges. Corner arc etch marks at each corner. Optional safety chamfer (≤2mm cut). Fingers OUTWARD by default. |
+| WALL_LONG | Rectangle long_outer × depth_outer. Plain rectangle — no corner arcs. Finger joints all edges. Optional strap pin holes. |
+| WALL_SHORT | Rectangle short_outer × depth_outer. Plain rectangle — no corner arcs. Finger joints all edges. |
+| WALL_LEG_LEFT/RIGHT | Rectangle leg_length × depth_outer. Plain rectangle — no corner arcs. Finger joints all edges. Leg-to-base joints use make_finger_edge_angled(). |
+| SOUNDBOARD | True trapezoid outline (straight edges). NO finger joints — build_plain_outline() only. Corner arc etch marks matching BASE. Sound hole if --soundhole-type. Brace score lines if --braces. Grain arrow always shown. |
 | NECK_BLOCK | if --hardware: rectangle neck_block_thickness × depth_outer. Label: &quot;NECK BLOCK — glue inside short end.&quot; |
 | TAIL_BLOCK | if --hardware: rectangle tail_block_thickness × depth_outer. Label: &quot;TAIL BLOCK — glue inside long end.&quot; |
 | KERF_STRIP (base) | if --kerfing: one per wall, kerf_height × inner_wall_length. Four total. |

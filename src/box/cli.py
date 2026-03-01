@@ -249,6 +249,19 @@ def validate_config(config: BoxConfig) -> list[dict]:
                 f"leg ({c.leg}mm) must be > leg_inset ({leg_inset:.3f}mm).",
                 "leg", str(c.leg))
 
+    # Wall-to-wall finger zone: depth_outer - 2*corner_radius must fit at least 1 finger
+    from core.radii import resolve_corner_radius
+    radius = resolve_corner_radius(c, geom)
+    ww_avail = geom.depth_outer - 2 * radius
+    ww_min   = c.thickness + 2 * c.burn
+    if ww_avail < ww_min:
+        max_r = (geom.depth_outer - ww_min) / 2
+        err(ERR_VALIDATION_FINGER_TOO_THIN,
+            f"Wall-to-wall finger zone is only {ww_avail:.3f}mm "
+            f"(depth_outer={geom.depth_outer:.3f}mm minus 2×corner_radius={radius:.3f}mm), "
+            f"but need ≥{ww_min:.3f}mm for one finger joint. "
+            f"Fix: increase --depth, or set --corner-radius ≤ {max_r:.2f}mm.")
+
     # Non-orthogonal structural safety
     fw = c.finger_width if c.finger_width else AUTO_FINGER_WIDTH_FACTOR * c.thickness
     W_over   = c.thickness * math.tan(math.radians(geom.leg_angle_deg))
