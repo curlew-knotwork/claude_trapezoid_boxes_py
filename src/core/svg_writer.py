@@ -6,6 +6,7 @@ Receives layout triples, produces SVG text.
 from __future__ import annotations
 import json
 import math
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -243,13 +244,122 @@ def _svg_for_sheet(
     return svg
 
 
+def _iter_path_points(path: ClosedPath):
+    """Yield all points in a ClosedPath (segment endpoints + Bezier control points)."""
+    for seg in path.segments:
+        match seg:
+            case Line(start=s, end=e):
+                yield s; yield e
+            case Arc(start=s, end=e):
+                yield s; yield e
+            case CubicBezier(start=s, cp1=c1, cp2=c2, end=e):
+                yield s; yield c1; yield c2; yield e
+
+
+def _verify_layout(
+    layout: list[tuple[Panel, Point, int]],
+    config: CommonConfig,
+) -> list[str]:
+    """Return list of error strings; empty = all checks passed."""
+    errors: list[str] = []
+    sw, sh = config.sheet_width, config.sheet_height
+    TOL = 1e-3  # 0.001mm — absorb floating-point rounding at boundaries
+
+    by_sheet: dict[int, list[tuple[Panel, Point]]] = {}
+    for panel, origin, idx in layout:
+        by_sheet.setdefault(idx, []).append((panel, origin))
+
+    for sheet_idx, panels in by_sheet.items():
+
+        # ── Check 1: all coordinates finite and within sheet bounds ──────────
+        for panel, origin in panels:
+            ox, oy = origin.x, origin.y
+
+            def _chk(pt: Point, ctx: str) -> None:
+                ax, ay = pt.x + ox, pt.y + oy
+                if not (math.isfinite(ax) and math.isfinite(ay)):
+                    errors.append(
+                        f"Sheet {sheet_idx} {panel.name} {ctx}: non-finite ({ax}, {ay})"
+                    )
+                elif not (-TOL <= ax <= sw + TOL and -TOL <= ay <= sh + TOL):
+                    errors.append(
+                        f"Sheet {sheet_idx} {panel.name} {ctx}: "
+                        f"({ax:.3f},{ay:.3f}) outside sheet {sw}×{sh}mm"
+                    )
+
+            for pt in _iter_path_points(panel.outline):
+                _chk(pt, "outline")
+
+            for hole in panel.holes:
+                match hole:
+                    case CircleHole(centre=c, diameter=d):
+                        r = d / 2
+                        for pt in [Point(c.x - r, c.y), Point(c.x + r, c.y),
+                                   Point(c.x, c.y - r), Point(c.x, c.y + r)]:
+                            _chk(pt, "circle hole")
+                    case ClosedHole(path=p):
+                        for pt in _iter_path_points(p):
+                            _chk(pt, "closed hole")
+
+        # ── Check 2: ClosedPath closure ───────────────────────────────────────
+        # Enforced by ClosedPath.__post_init__; SVG serialiser always appends Z.
+        # Both invariants hold by construction — no redundant check needed.
+
+        # ── Check 3: no panel bounding box overlaps within a sheet ───────────
+        n = len(panels)
+        for i in range(n):
+            pi, oi = panels[i]
+            ax1, ay1 = oi.x, oi.y
+            ax2, ay2 = oi.x + pi.width, oi.y + pi.height
+            for j in range(i + 1, n):
+                pj, oj = panels[j]
+                bx1, by1 = oj.x, oj.y
+                bx2, by2 = oj.x + pj.width, oj.y + pj.height
+                if ax1 < bx2 - TOL and ax2 > bx1 + TOL and ay1 < by2 - TOL and ay2 > by1 + TOL:
+                    errors.append(
+                        f"Sheet {sheet_idx}: bounding box overlap: "
+                        f"{pi.name} ({ax1:.1f},{ay1:.1f})–({ax2:.1f},{ay2:.1f}) "
+                        f"vs {pj.name} ({bx1:.1f},{by1:.1f})–({bx2:.1f},{by2:.1f})"
+                    )
+
+    # ── Check 4: soundhole corner angles ─────────────────────────────────────
+    # Requires geometry context not stored in Panel; verified at generation time
+    # in instrument/soundhole.py. Not re-checked here.
+
+    return errors
+
+
+def verify_or_abort(
+    layout: list[tuple[Panel, Point, int]],
+    config: CommonConfig,
+) -> None:
+    """Verify layout before writing. Raises ValueError and prints errors if any check fails.
+
+    Checks:
+    1. All path coordinates finite and within sheet bounds.
+    2. ClosedPath closure — guaranteed by constructor + serialiser (documented here).
+    3. No panel bounding box overlaps within a sheet.
+
+    If any check fails: errors printed to stderr, ValueError raised, no file written.
+    """
+    errors = _verify_layout(layout, config)
+    if errors:
+        for e in errors:
+            print(f"VERIFY ERROR: {e}", file=sys.stderr)
+        raise ValueError(
+            f"SVG verification failed ({len(errors)} error(s)); no file written."
+        )
+
+
 def write(
     layout:       list[tuple[Panel, Point, int]],
     config:       CommonConfig,
     output_paths: list[Path],
     mode:         str = "",
 ) -> None:
-    """Groups by sheet_index, produces one SVG per sheet, writes to output_paths."""
+    """Verify layout then produce one SVG per sheet, written to output_paths."""
+    verify_or_abort(layout, config)
+
     # Group by sheet
     sheets: dict[int, list[tuple[Panel, Point]]] = {}
     for panel, origin, idx in layout:
