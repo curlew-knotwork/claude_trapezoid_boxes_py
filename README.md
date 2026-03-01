@@ -1,6 +1,4 @@
-# claude_trapezoid_boxes_py
-
-## trapezoid_boxes (.py)
+# trapezoid_boxes.py
 
 Parametric laser-cut box generator for:
 - generic: trapezoidal boxes, or
