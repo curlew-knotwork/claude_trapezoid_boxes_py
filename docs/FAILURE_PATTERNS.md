@@ -9,18 +9,19 @@ Update counts and session log when a pattern recurs or is surfaced.
 |---|---|---|---|---|---|---|
 | 1 | Fix symptom not root cause | 4 | 0 | 4 | 1 | 1 |
 | 2 | Verification chain decoupled (standalone script duplicates production logic) | 2 | 0 | 2 | 0 | 1 |
-| 3 | Declared done without tracing math / visual inspection | 5 | 0 | 5 | 0 | 2 |
-| 4 | Design question deferred — implemented workaround instead | 3 | 0 | 3 | 1 | 1 |
+| 3 | Declared done without tracing math / visual inspection | 6 | 0 | 6 | 0 | 3 |
+| 4 | Design question deferred — implemented workaround instead | 4 | 0 | 4 | 1 | 2 |
 | 5 | Output presented without confirming it exercises changed code path | 3 | 0 | 3 | 0 | 1 |
 | 6 | Same bug class in multiple files (fixed in X, not propagated to Y) | 3 | 0 | 3 | 0 | 0 |
-| 7 | Requires Socratic prompting — user asks smell questions Claude should self-ask | 5 | 0 | 5 | 0 | 0 |
+| 7 | Requires Socratic prompting — user asks smell questions Claude should self-ask | 6 | 0 | 6 | 0 | 0 |
+| 8 | Verification gap — test passes but does not cover the thing that is wrong | 1 | 0 | 1 | 0 | 1 |
 
 **Running totals (as of 2026-03-01):**
-- Total occurrences tracked: 25
+- Total occurrences tracked: 29
 - Surfaced proactively by Claude: 0
-- Surfaced by user (Claude missed): 25
+- Surfaced by user (Claude missed): 29
 - Led to sparring/design discussion: 2
-- Led to architecture or spec correction: 6
+- Led to architecture or spec correction: 8
 
 ## Pattern Descriptions
 
@@ -37,13 +38,14 @@ as verification — but they verify only their own copy, not the changed product
 **3. Declared done without tracing math**
 Presenting SVG output or claiming correctness without tracing computed values against the spec.
 "It ran without error" is not verification. Examples: hanging tab survived 9 declarations of
-correctness; corner angle inversion caught only by user visual inspection.
+correctness; corner angle inversion caught only by user visual inspection; radius=0 on walls
+set without tracing burn model overrun at zone boundary.
 
 **4. Design question deferred**
 When a fix requires architectural judgment, defaulting to a point fix and moving on.
 The cost: entropy accumulates, later fixes are more expensive, the user must initiate sparring.
-Example: corner arcs on wall panels caused wall-to-wall joint failures across many small boxes;
-the design question (why do walls have arcs at all?) was never raised proactively.
+Examples: corner arcs on wall panels (why do walls have arcs at all?); radius=0 chosen for
+walls without asking "what does the burn model do at the zone boundary with no buffer?"
 
 **5. Output presented without verifying code path**
 Regenerating output after a fix without confirming the regeneration calls the fixed module.
@@ -63,6 +65,15 @@ internally. Related to #3 (declared done without tracing) but the failure mode i
 communication: Claude forces the user to act as a thinking scaffold rather than thinking first.
 Target behaviour: Claude self-asks these questions before presenting output.
 
+**8. Verification gap — test passes but does not cover the thing that is wrong**
+The test suite (proofs, verify_or_abort) tests mathematical relationships and absence-of-crash,
+but has no assertion for a constraint that matters. Tests pass with flying colours while a
+visible defect exists. Distinct from #2 (decoupled chain) — the tests ARE coupled to production
+code, but they test the wrong things. Fix: when a defect is found, the first question is
+"what test would have caught this?" Add that test before or alongside the code fix.
+Example: proofs 01-07 all pass; no proof checks that drawn path coordinates stay within
+nominal panel bounds. Burn model overrun (radius=0, 0.1mm protrusion) not caught.
+
 ## How to Use This File
 
 After each session:
@@ -72,6 +83,7 @@ After each session:
 
 Target: surfaced-by-Claude column should grow. Surfaced-by-user column should shrink.
 Pattern #7 rate = 0 when Claude asks smell questions before the user has to.
+Pattern #8 rate = 0 when every defect found by user already has a test written before the fix.
 
 ## Session Log
 
@@ -79,4 +91,5 @@ Pattern #7 rate = 0 when Claude asks smell questions before the user has to.
 |------|-----------|-------------------|-------|
 | 2026-02-xx | Initial implementation sessions | 1,2,3,4,5,6 identified | All counts established retroactively |
 | 2026-03-01 | Corner arc redesign sparring + implementation | 1 (VALIDATION workaround), 3, 4, 6 | Sparring initiated by user; redesign required arch change |
-| 2026-03-01 | Context continuation: complete redesign + gen_test_cut rewrite | 6 (hardware/kerfing Panel missing field), 7 | Pattern 7 surfaced by user asking indicative questions about doc location and temporal tracking |
+| 2026-03-01 | Context continuation: complete redesign + gen_test_cut rewrite | 6 (hardware/kerfing Panel missing field), 7 | Pattern 7 surfaced by user asking indicative questions |
+| 2026-03-01 | Burn model boundary overrun found post-commit | 3, 4, 7, 8 | radius=0 set on walls without tracing burn overrun at boundary; proofs passed; user caught visually after ~1 day of indirect signals. Pattern 8 added. Rules added to both CLAUDE.md files. |
