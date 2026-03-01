@@ -103,7 +103,7 @@ def _make_base(geom: TrapezoidGeometry, radius: float,
     _, arc_BR, _ = corner_arc_segments(BR,
         Point(leg_ax, leg_ay), Point(-1.0, 0.0), radius, sea)
     _, arc_BL, _ = corner_arc_segments(BL,
-        Point(-1.0, 0.0), Point(-leg_ax, -leg_ay), radius, sea)
+        Point(-1.0, 0.0), Point(leg_ax, -leg_ay), radius, sea)
 
     # BASE edges: tabs. Walls have slots. Finger depth = wall thickness.
     e_short = make_finger_edge(
@@ -183,8 +183,12 @@ def _make_walls(geom: TrapezoidGeometry, radius: float,
     # ── WALL_LEG_RIGHT — isosceles: copy of leg_left ──────────────────────────
     leg_right = dataclasses.replace(
         leg_left, type=PanelType.WALL_LEG_RIGHT, name="WALL_LEG_RIGHT",
-        marks=[dataclasses.replace(m, content="5") if m.type == MarkType.ASSEMBLY_NUM
-               else m for m in leg_left.marks],
+        marks=[
+            dataclasses.replace(m, content="5") if m.type == MarkType.ASSEMBLY_NUM
+            else dataclasses.replace(m, content="WALL_LEG_RIGHT") if m.type == MarkType.LABEL
+            else m
+            for m in leg_left.marks
+        ],
     )
     walls.append(leg_right)
 
@@ -213,13 +217,13 @@ def _make_rect_wall(
         TL, TR, t, t, protrude_outward, top_slotted,
         burn, tol, 2*burn, 2*burn, 90.0, 90.0)
     e_right = make_finger_edge(
-        TR, BR, t, t, protrude_outward, False,
+        TR, BR, t, t, protrude_outward, True,
         burn, tol, 2*burn, 2*burn, 90.0, 90.0)
     e_bottom = make_finger_edge(
         BR, BL, t, t, protrude_outward, bottom_slotted,
         burn, tol, 2*burn, 2*burn, 90.0, 90.0)
     e_left = make_finger_edge(
-        BL, TL, t, t, protrude_outward, False,
+        BL, TL, t, t, protrude_outward, True,
         burn, tol, 2*burn, 2*burn, 90.0, 90.0)
 
     edges = [e_top, e_right, e_bottom, e_left]

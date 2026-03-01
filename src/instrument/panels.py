@@ -89,7 +89,7 @@ def _make_base(geom: TrapezoidGeometry, radius: float,
     _, arc_TL, _ = corner_arc_segments(TL, Point(leg_ax, -leg_ay), Point(1.0, 0.0),  radius, lea)
     _, arc_TR, _ = corner_arc_segments(TR, Point(1.0, 0.0), Point(leg_ax, leg_ay),   radius, lea)
     _, arc_BR, _ = corner_arc_segments(BR, Point(leg_ax, leg_ay), Point(-1.0, 0.0),  radius, sea)
-    _, arc_BL, _ = corner_arc_segments(BL, Point(-1.0, 0.0), Point(-leg_ax, -leg_ay), radius, sea)
+    _, arc_BL, _ = corner_arc_segments(BL, Point(-1.0, 0.0), Point(leg_ax, -leg_ay),  radius, sea)
 
     e_short = make_finger_edge(TL, TR, t, t, protrude_outward, False,
                                burn, tol, radius, radius, lea, lea)
@@ -160,9 +160,9 @@ def _rect_wall(ptype, name, width, height, t, radius, protrude_outward, burn, to
 
     # Wall panels: plain rectangles — no corner arcs. radius=0.
     e_top    = make_finger_edge(TL, TR, t, t, protrude_outward, True,  burn, tol, 2*burn, 2*burn, 90.0, 90.0)
-    e_right  = make_finger_edge(TR, BR, t, t, protrude_outward, False, burn, tol, 2*burn, 2*burn, 90.0, 90.0)
+    e_right  = make_finger_edge(TR, BR, t, t, protrude_outward, True,  burn, tol, 2*burn, 2*burn, 90.0, 90.0)
     e_bottom = make_finger_edge(BR, BL, t, t, protrude_outward, True,  burn, tol, 2*burn, 2*burn, 90.0, 90.0)
-    e_left   = make_finger_edge(BL, TL, t, t, protrude_outward, False, burn, tol, 2*burn, 2*burn, 90.0, 90.0)
+    e_left   = make_finger_edge(BL, TL, t, t, protrude_outward, True,  burn, tol, 2*burn, 2*burn, 90.0, 90.0)
 
     edges = [e_top, e_right, e_bottom, e_left]
     outline = build_panel_outline_straight_corners(edges, [TL, TR, BR, BL])
@@ -222,7 +222,7 @@ def _make_soundboard(config: InstrumentConfig, geom: TrapezoidGeometry, radius: 
     _, arc_TL, _ = corner_arc_segments(TL, Point(leg_ax, -leg_ay), Point(1.0, 0.0),  radius, lea)
     _, arc_TR, _ = corner_arc_segments(TR, Point(1.0, 0.0), Point(leg_ax, leg_ay),   radius, lea)
     _, arc_BR, _ = corner_arc_segments(BR, Point(leg_ax, leg_ay), Point(-1.0, 0.0),  radius, sea)
-    _, arc_BL, _ = corner_arc_segments(BL, Point(-1.0, 0.0), Point(-leg_ax, -leg_ay), radius, sea)
+    _, arc_BL, _ = corner_arc_segments(BL, Point(-1.0, 0.0), Point(leg_ax, -leg_ay),  radius, sea)
 
     marks_list = [
         Mark(MarkType.GRAIN_ARROW, Point(lo / 2, L / 2), "", 0.0),
