@@ -1,7 +1,7 @@
-# trapezoid_box — Specification v2.0
+# trapezoid_boxes — Specification v2.0
 
 
-**trapezoid_box**
+**trapezoid_boxes**
 
 Specification v2.0
 
@@ -39,10 +39,10 @@ Active safety validation — The Gatekeeper. Before any geometry is computed, va
 Python 3.11. Use dataclasses, match statements, and pathlib freely.
 
 ## 4. Repository Structure
-> ℹ️ trapezoid_box/
+> ℹ️ trapezoid_boxes/
 
 
-> ℹ️ ├── trapezoid_box.py              # Entry point and mode selector only
+> ℹ️ ├── trapezoid_boxes.py              # Entry point and mode selector only
 
 
 > ℹ️ ├── README.md                    # Install, usage examples, parameter diagram
@@ -458,7 +458,7 @@ CommonConfig — parameters shared by both modes.
 > ℹ️ json_errors:   bool  = False
 
 
-> ℹ️ output:        str   = &quot;trapezoid_box_output.svg&quot;
+> ℹ️ output:        str   = &quot;trapezoid_boxes_output.svg&quot;
 
 
 length and leg are mutually exclusive: exactly one must be non-None in a valid config. The CLI uses add_mutually_exclusive_group(). validate_config() verifies exactly one is provided.
@@ -1598,7 +1598,7 @@ Root element includes scale warning comment (see below).
 Includes &lt;metadata&gt; with trapezoidbox namespace and embedded config JSON.
 
 ### 15.2 SVG Scale Warning Comment
-> ℹ️ &lt;!-- trapezoid_box v2.0 — dimensions in millimetres
+> ℹ️ &lt;!-- trapezoid_boxes v2.0 — dimensions in millimetres
 
 
 > ℹ️ IMPORTANT: Verify scale before cutting.
@@ -2019,7 +2019,7 @@ Presets allow first-time users to get working output immediately. A preset is a 
 | tenor-guitar | instrument mode. Scaled-up dulcimer at tenor guitar proportions. |
 
 
-Invocation: python trapezoid_box.py box --preset pencil-box --output pencil.svg
+Invocation: python trapezoid_boxes.py box --preset pencil-box --output pencil.svg
 
 --list-presets prints all presets with descriptions and exits. No SVG generated.
 
@@ -2040,13 +2040,13 @@ Required tests in test_presets.py: CLI overrides config overrides preset; config
 
 ## 23. CLI Interface
 ### 23.1 Entry Point Structure
-> ℹ️ trapezoid_box.py [--version] [--list-presets] [--extract-config PATH] {box|instrument}
+> ℹ️ trapezoid_boxes.py [--version] [--list-presets] [--extract-config PATH] {box|instrument}
 
 
-> ℹ️ trapezoid_box.py box        [common] [box-params]
+> ℹ️ trapezoid_boxes.py box        [common] [box-params]
 
 
-> ℹ️ trapezoid_box.py instrument [common] [instrument-params]
+> ℹ️ trapezoid_boxes.py instrument [common] [instrument-params]
 
 
 Top-level flags handled before subcommand parsing. No subcommand required for --version, --list-presets, --extract-config. Missing subcommand with no top-level flag: print help, exit 0.
@@ -2112,7 +2112,7 @@ Top-level flags handled before subcommand parsing. No subcommand required for --
 > ℹ️ --list-presets        List presets and exit
 
 
-> ℹ️ --output PATH         Output path (default: trapezoid_box_output.svg)
+> ℹ️ --output PATH         Output path (default: trapezoid_boxes_output.svg)
 
 
 > ℹ️ --config PATH         Load parameters from JSON config file
@@ -2211,7 +2211,7 @@ Top-level flags handled before subcommand parsing. No subcommand required for --
 > ℹ️ {
 
 
-> ℹ️ &quot;trapezoid_box_version&quot;: &quot;2.0&quot;,
+> ℹ️ &quot;trapezoid_boxes_version&quot;: &quot;2.0&quot;,
 
 
 > ℹ️ &quot;common&quot;: {
@@ -2259,7 +2259,7 @@ Top-level flags handled before subcommand parsing. No subcommand required for --
 > ℹ️ }
 
 
-null = auto-calculate. Unknown keys ignored with warning. Missing sheet_height uses DEFAULT_SHEET_HEIGHT_MM = 600.0. On load: if trapezoid_box_version absent or older, print warning but proceed.
+null = auto-calculate. Unknown keys ignored with warning. Missing sheet_height uses DEFAULT_SHEET_HEIGHT_MM = 600.0. On load: if trapezoid_boxes_version absent or older, print warning but proceed.
 
 ## 25. SVG Metadata
 > ℹ️ &lt;svg xmlns=&quot;http://www.w3.org/2000/svg&quot;
@@ -2271,7 +2271,7 @@ null = auto-calculate. Unknown keys ignored with warning. Missing sheet_height u
 > ℹ️ width=&quot;600.0000mm&quot; height=&quot;600.0000mm&quot; viewBox=&quot;0 0 600.0000 600.0000&quot;&gt;
 
 
-> ℹ️ &lt;!-- trapezoid_box v2.0 — dimensions in millimetres ... [scale warning] --&gt;
+> ℹ️ &lt;!-- trapezoid_boxes v2.0 — dimensions in millimetres ... [scale warning] --&gt;
 
 
 > ℹ️ &lt;metadata&gt;
@@ -2286,7 +2286,7 @@ null = auto-calculate. Unknown keys ignored with warning. Missing sheet_height u
 > ℹ️ &lt;trapezoidbox:generated&gt;2026-02-26T10:30:00Z&lt;/trapezoidbox:generated&gt;
 
 
-> ℹ️ &lt;trapezoidbox:config&gt;&lt;![CDATA[{&quot;trapezoid_box_version&quot;: &quot;2.0&quot;, ...}]]&gt;&lt;/trapezoidbox:config&gt;
+> ℹ️ &lt;trapezoidbox:config&gt;&lt;![CDATA[{&quot;trapezoid_boxes_version&quot;: &quot;2.0&quot;, ...}]]&gt;&lt;/trapezoidbox:config&gt;
 
 
 > ℹ️ &lt;/metadata&gt;
@@ -2375,7 +2375,7 @@ Three golden SVGs in tests/golden/. Integration test generates SVG for each conf
 Random valid CommonConfigs within bounds (long 50–500mm, short 20–long, depth 20–300mm, thickness 1–6mm). Verify: derive() succeeds; odd_count returns odd &gt;= 3; no negative perimeters; Helmholtz frequency positive and finite.
 
 ## 29. Stdout Summary Format
-> ℹ️ trapezoid_box v2.0 — instrument mode
+> ℹ️ trapezoid_boxes v2.0 — instrument mode
 
 
 > ℹ️ ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -2708,12 +2708,12 @@ long=180, short=120, length=380, depth=90, thickness=3.0, finger_width=9.0 (auto
 
 
 ## Appendix B — Builder's Guide: The Physical Story Behind the Code
-This appendix is for students, makers, and instrument builders who want to understand not just what trapezoid_box.py does, but why it does it that way. No programming knowledge is assumed. If you have ever tried to build a laser-cut box and found the joints too tight, too loose, or stubbornly refusing to seat — this is for you.
+This appendix is for students, makers, and instrument builders who want to understand not just what trapezoid_boxes.py does, but why it does it that way. No programming knowledge is assumed. If you have ever tried to build a laser-cut box and found the joints too tight, too loose, or stubbornly refusing to seat — this is for you.
 
 ### B.1 The Laser Does Not Know What You Want to Build
 A laser cutter is a surprisingly literal machine. You give it a line on a screen; it burns that line into your material. It does not know that the line is the edge of a finger joint, or that the joint will be inserted at an angle, or that the material has any thickness at all. It just burns.
 
-This means every physical constraint of your design must be calculated in advance and encoded into the lines you give the laser. trapezoid_box.py exists to do that calculation correctly so you do not have to.
+This means every physical constraint of your design must be calculated in advance and encoded into the lines you give the laser. trapezoid_boxes.py exists to do that calculation correctly so you do not have to.
 
 ### B.2 Why Finger Joints?
 A finger joint — the interlocking row of tabs and slots on laser-cut boxes — is the standard way to join two flat panels at a right angle. The tabs on one panel slide into the slots on the other, giving a large gluing surface and a self-aligning joint that holds its shape while the glue sets.
@@ -2741,7 +2741,7 @@ The fix is to widen the slot by exactly T x tan(angle) to give the rotating corn
 ### B.5 The Gatekeeper: Why the Tool Refuses Some Designs
 As the trapezoid angle increases, the overcut gets larger. At some point it eats into the structural part of the finger — the wood that carries the load and holds the glue. The joint becomes too thin to be useful.
 
-trapezoid_box.py calculates the remaining structural width and refuses to generate an SVG if it falls below half the material thickness. The error message tells you exactly what is happening and gives you three options: reduce the angle, increase the finger width, or reduce the material thickness.
+trapezoid_boxes.py calculates the remaining structural width and refuses to generate an SVG if it falls below half the material thickness. The error message tells you exactly what is happening and gives you three options: reduce the angle, increase the finger width, or reduce the material thickness.
 
 It may feel frustrating to have the tool refuse to run. But it is far less frustrating than cutting a full sheet, assembling the box, and discovering that the leg joints simply fall apart.
 
@@ -2779,7 +2779,7 @@ Always open the SVG in Inkscape first. Check Document Properties (Shift+Ctrl+D).
 The SVG file includes a prominent comment at the top reminding you of this check every time. Do not skip it.
 
 ### B.11 Grain Direction: A Structural Decision, Not an Aesthetic One
-Wood is much stronger along the grain than across it. The soundboard of an instrument must have grain running along its long axis — across-grain soundboards vibrate differently and are structurally weaker. trapezoid_box.py marks grain direction on every panel with a double-headed arrow, and the layout algorithm never rotates BASE or SOUNDBOARD panels even if rotation would reduce material waste.
+Wood is much stronger along the grain than across it. The soundboard of an instrument must have grain running along its long axis — across-grain soundboards vibrate differently and are structurally weaker. trapezoid_boxes.py marks grain direction on every panel with a double-headed arrow, and the layout algorithm never rotates BASE or SOUNDBOARD panels even if rotation would reduce material waste.
 
 When you cut the sheet, orient your plywood so the grain arrows match the long axis of those panels. For wall panels the grain direction is less critical and rotation is permitted.
 

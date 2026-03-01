@@ -2,7 +2,7 @@
 <svg xmlns="http://www.w3.org/2000/svg"
      width="311.1954mm" height="77.0000mm"
      viewBox="0 0 311.1954 77.0000">
-<!-- trapezoid_box test cut — 3mm ply — 1:1 scale
+<!-- trapezoid_boxes test cut — 3mm ply — 1:1 scale
      burn=0.05mm  tol=0.0mm
      drawn_tab=9.100mm  drawn_slot=8.900mm  nominal_fit=-0.200mm
      burn=0.05,tol=0.0 -> fit=-0.2mm (friction). burn=0.05,tol=0.1 -> fit=0.0mm (hand press) -->

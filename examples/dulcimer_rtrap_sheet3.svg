@@ -3,7 +3,7 @@
      xmlns:trapezoidbox="https://trapezoidbox.github.io/ns/1.0"
      width="600.0000mm" height="600.0000mm"
      viewBox="0 0 600.0000 600.0000">
-<!-- trapezoid_box v2.0 — dimensions in millimetres
+<!-- trapezoid_boxes v2.0 — dimensions in millimetres
      IMPORTANT: Verify scale before cutting.
      Open in Inkscape and confirm Document Properties shows correct physical dimensions.
      If your laser software scales incorrectly, use Inkscape to export
@@ -12,7 +12,7 @@
   <trapezoidbox:version>2.0</trapezoidbox:version>
   <trapezoidbox:mode>instrument</trapezoidbox:mode>
   <trapezoidbox:generated>2026-02-27T15:44:29Z</trapezoidbox:generated>
-  <trapezoidbox:config><![CDATA[{"trapezoid_box_version": "2.0", "common": {"long": 180.0, "short": 120.0, "length": 380.0, "leg": null, "depth": 90.0, "thickness": 3.0, "burn": 0.05, "tolerance": 0.1, "corner_radius": null, "finger_width": null, "sheet_width": 600.0, "sheet_height": 600.0, "labels": true, "dim_mode": "outer"}}]]></trapezoidbox:config>
+  <trapezoidbox:config><![CDATA[{"trapezoid_boxes_version": "2.0", "common": {"long": 180.0, "short": 120.0, "length": 380.0, "leg": null, "depth": 90.0, "thickness": 3.0, "burn": 0.05, "tolerance": 0.1, "corner_radius": null, "finger_width": null, "sheet_width": 600.0, "sheet_height": 600.0, "labels": true, "dim_mode": "outer"}}]]></trapezoidbox:config>
 </metadata>
 <defs><marker id="arrow" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto" markerUnits="strokeWidth"><path d="M0,0 L0,6 L6,3 z" fill="black"/></marker></defs>
 <!-- Panel: TEST_STRIP at (10.000,10.000) -->

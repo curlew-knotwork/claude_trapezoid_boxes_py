@@ -271,7 +271,7 @@ svg = f'''<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg"
      width="{fmt(total_w)}mm" height="{fmt(total_h)}mm"
      viewBox="0 0 {fmt(total_w)} {fmt(total_h)}">
-<!-- trapezoid_box test cut — 3mm ply — 1:1 scale
+<!-- trapezoid_boxes test cut — 3mm ply — 1:1 scale
      burn={BURN}mm  tol={TOL}mm
      drawn_tab={TAB_W:.3f}mm  drawn_slot={GAP_W:.3f}mm  nominal_fit={FIT:+.3f}mm
      burn=0.05,tol=0.0 -> fit=-0.2mm (friction). burn=0.05,tol=0.1 -> fit=0.0mm (hand press) -->

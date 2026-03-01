@@ -1,7 +1,7 @@
-# trapezoid_box — Build Validation Manual
+# trapezoid_boxes — Build Validation Manual
 
 
-**trapezoid_box.py**
+**trapezoid_boxes.py**
 
 Build Validation Manual
 
@@ -33,7 +33,7 @@ Install and verify each item before proceeding. All are free.
 | No extra libraries needed | Scripts use stdlib only (math, sys, os) |
 | Inkscape 1.0+ | inkscape --version  →  opens and renders SVG |
 | Your laser cutter software | Can import SVG and set cut vs engrave layers |
-| trapezoid_box_proofs/ folder | Contains 01_trapezoid_geometry.py through 07_assembly_simulation.py |
+| trapezoid_boxes_proofs/ folder | Contains 01_trapezoid_geometry.py through 07_assembly_simulation.py |
 
 
 ### 0.2  Material checklist — dulcimer preset (reference dimensions)
@@ -78,7 +78,7 @@ Run all seven scripts in order. Each script is independent — no installation r
 
 
 ### 1.1  Script 01 — Trapezoid geometry derivation
-**Step 1.  **Run the script:  — cd trapezoid_box_proofs &amp;&amp; python3 01_trapezoid_geometry.py
+**Step 1.  **Run the script:  — cd trapezoid_boxes_proofs &amp;&amp; python3 01_trapezoid_geometry.py
 
 Checks: mode A (length given), mode B (leg given), DimMode.INNER expansion, boundary conditions, square-box degenerate case.
 
@@ -180,14 +180,14 @@ Three phases: individual geometry checks, full assembly simulation across all fo
 Once implementation exists, generate the box SVG with the reference preset:
 
 ```
-python3 trapezoid_box.py --long 180 --short 120 --length 380 --depth 90 --thickness 3.0 --output my_box.svg
+python3 trapezoid_boxes.py --long 180 --short 120 --length 380 --depth 90 --thickness 3.0 --output my_box.svg
 ```
 
 
 Expected stdout output (reference preset):
 
 ```
-trapezoid_box v0.20
+trapezoid_boxes v0.20
 ```
 
 
@@ -285,7 +285,7 @@ D4 — Test strip measurement guide. Only a 60×340mm offcut of your box materia
 > ✅ Test strip fits snugly by hand. Tab is flush with slot face. No gap visible.
 
 
-> ❌ Fit does not converge after 3–4 iterations: check actual material thickness with calipers. If it is not 3.0mm, re-run trapezoid_box.py with --thickness set to the actual measured value.
+> ❌ Fit does not converge after 3–4 iterations: check actual material thickness with calipers. If it is not 3.0mm, re-run trapezoid_boxes.py with --thickness set to the actual measured value.
 
 
 ## Phase 4 — Full Panel Cut and Dry-Fit Assembly
@@ -366,7 +366,7 @@ D5 — Assembly sequence. Follow numbered order. Rotate leg walls into position 
 **Step 1.  **Add sound hole flag to your command:
 
 ```
-python3 trapezoid_box.py --long 180 --short 120 --length 380 --depth 90 --thickness 3.0 --soundhole-type round --soundhole-hz 110 --output my_instrument.svg
+python3 trapezoid_boxes.py --long 180 --short 120 --length 380 --depth 90 --thickness 3.0 --soundhole-type round --soundhole-hz 110 --output my_instrument.svg
 ```
 
 
@@ -481,4 +481,4 @@ D6 — Sliding lid groove cross-section (if lid=sliding). Green lid must be cut 
 
 End of Build Validation Manual
 
-trapezoid_box.py v0.20 — spec believed correct, unproven by physical cut
+trapezoid_boxes.py v0.20 — spec believed correct, unproven by physical cut

@@ -1,5 +1,5 @@
 """
-core/models.py — All dataclasses and enums for trapezoid_box v2.0.
+core/models.py — All dataclasses and enums for trapezoid_boxes v2.0.
 No logic lives here — only data definitions.
 """
 
@@ -224,7 +224,7 @@ class CommonConfig:
     dim_mode:      DimMode = DimMode.OUTER
     colorblind:        bool  = False
     json_errors:       bool  = False
-    output:            str   = "trapezoid_box_output.svg"
+    output:            str   = "trapezoid_boxes_output.svg"
     display_stroke_mm: float = 0.0   # 0 = laser hairline; >0 overrides for human-viewable output
 
 

@@ -59,7 +59,7 @@ def print_summary(
     mode:      str,
 ) -> None:
     """Print a human-readable summary of the generated output."""
-    print(f"trapezoid_box v2.0 — {mode} mode")
+    print(f"trapezoid_boxes v2.0 — {mode} mode")
     print(f"  Geometry: long={geom.long_outer:.1f} short={geom.short_outer:.1f} "
           f"length={geom.length_outer:.1f} depth={geom.depth_outer:.1f} "
           f"T={geom.thickness:.1f}mm")

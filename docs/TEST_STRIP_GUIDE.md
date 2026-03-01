@@ -1,13 +1,13 @@
-# trapezoid_box — Test Strip & Kerf Calibration Guide
+# trapezoid_boxes — Test Strip & Kerf Calibration Guide
 
 
-**trapezoid_box.py**
+**trapezoid_boxes.py**
 
 **Kerf Calibration: Test Strip Guide**
 
 v0.20 — standalone procedure
 
-docs/trapezoid_box_test_strip_guide.docx
+docs/trapezoid_boxes_test_strip_guide.docx
 
 **Purpose**
 
@@ -38,7 +38,7 @@ Material cost: one ~120 × 270 mm offcut. Time: ~30 minutes including iteration.
 ## 3.1  What you are testing and why
 Every laser cutter burns a path slightly wider than the vector line in the SVG. This width is the kerf. Because the laser removes material symmetrically on both sides of the path, finger joint tabs come out narrower than drawn and slots come out wider than drawn. If uncorrected, the joints either cannot assemble (too tight) or are structurally useless (too loose).
 
-The trapezoid_box tool has a kerf_compensation parameter. It offsets tab edges outward in the SVG — making tabs wider on paper — and slot edges inward — making slots narrower on paper — so that after the laser removes its kerf, the physical dimensions come out at the designed nominal values.
+The trapezoid_boxes tool has a kerf_compensation parameter. It offsets tab edges outward in the SVG — making tabs wider on paper — and slot edges inward — making slots narrower on paper — so that after the laser removes its kerf, the physical dimensions come out at the designed nominal values.
 
 The correct kerf_compensation value cannot be calculated from first principles. It depends on your specific machine, its focus quality, the power and speed settings you use, and the particular material and batch. It must be found physically by cutting and testing.
 
@@ -81,7 +81,7 @@ Two TEST_STRIP pieces: 60 mm × 270 mm each. Total scrap needed: approximately 1
 | Starting kerf value | If unknown: start at 0.10 mm. Typical CO2 laser range on 3 mm ply or MDF: 0.05–0.15 mm. Always calibrate — never assume. |
 
 
-> ⚠️ Measure your actual material thickness with calipers before cutting. If it differs from 3.0 mm by more than 0.2 mm, re-run trapezoid_box.py with --thickness set to the measured value before generating the test SVG.
+> ⚠️ Measure your actual material thickness with calipers before cutting. If it differs from 3.0 mm by more than 0.2 mm, re-run trapezoid_boxes.py with --thickness set to the measured value before generating the test SVG.
 
 
 ## 3.5  Step-by-step: cut the test strips
@@ -93,7 +93,7 @@ Two TEST_STRIP pieces: 60 mm × 270 mm each. Total scrap needed: approximately 1
   - Subsequent attempts: use the value from your iteration tally (Section 3.7).
 
 ```
-python3 trapezoid_box.py --long 180 --short 120 --length 380 --depth 90 --thickness 3.0 --kerf-compensation 0.10 --output test_strip.svg
+python3 trapezoid_boxes.py --long 180 --short 120 --length 380 --depth 90 --thickness 3.0 --kerf-compensation 0.10 --output test_strip.svg
 ```
 
   - Note: exact CLI flag name (--kerf-compensation) is illustrative — verify against your implementation.
@@ -177,7 +177,7 @@ One row per cut. Stop at PASS. Do not proceed to Phase 4 until you have a PASS.
 | PASS value: | __________ mm | Material: |  | Date: |
 
 
-> ⚠️ If no PASS after 4 cuts: stop cutting. (1) Confirm actual material thickness is within 0.2 mm of 3.0 mm — re-measure with calipers. (2) Confirm laser is in focus at the material surface — re-run autofocus. (3) If thickness is wrong, re-run trapezoid_box.py with the correct --thickness and restart the tally.
+> ⚠️ If no PASS after 4 cuts: stop cutting. (1) Confirm actual material thickness is within 0.2 mm of 3.0 mm — re-measure with calipers. (2) Confirm laser is in focus at the material surface — re-run autofocus. (3) If thickness is wrong, re-run trapezoid_boxes.py with the correct --thickness and restart the tally.
 
 
 ## 3.8  What this test covers and does not cover
@@ -207,4 +207,4 @@ One row per cut. Stop at PASS. Do not proceed to Phase 4 until you have a PASS.
 
 — end of test strip guide —
 
-trapezoid_box/docs/trapezoid_box_test_strip_guide.docx  |  v0.20
+trapezoid_boxes/docs/trapezoid_boxes_test_strip_guide.docx  |  v0.20

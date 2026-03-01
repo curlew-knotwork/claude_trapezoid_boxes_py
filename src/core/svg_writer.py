@@ -72,7 +72,7 @@ def path_to_svg_d(path: ClosedPath, origin: Point) -> str:
 def _config_to_json(config: CommonConfig) -> str:
     """Serialize CommonConfig to JSON string for metadata embedding."""
     d = {
-        "trapezoid_box_version": TOOL_VERSION,
+        "trapezoid_boxes_version": TOOL_VERSION,
         "common": {
             "long": config.long,
             "short": config.short,
@@ -201,7 +201,7 @@ def _svg_for_sheet(
     config_json = _config_to_json(config)
 
     scale_warning = (
-        "<!-- trapezoid_box v2.0 — dimensions in millimetres\n"
+        "<!-- trapezoid_boxes v2.0 — dimensions in millimetres\n"
         "     IMPORTANT: Verify scale before cutting.\n"
         "     Open in Inkscape and confirm Document Properties shows correct physical dimensions.\n"
         "     If your laser software scales incorrectly, use Inkscape to export\n"

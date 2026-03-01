@@ -210,7 +210,7 @@ def build_config(args: argparse.Namespace) -> InstrumentConfig:
         dim_mode=vals["dim_mode"],
         colorblind=vals.get("colorblind", False),
         json_errors=vals.get("json_errors", False),
-        output=vals.get("output", "trapezoid_box_output.svg"),
+        output=vals.get("output", "trapezoid_boxes_output.svg"),
         display_stroke_mm=vals.get("display_stroke_mm", 0.0),
     )
 

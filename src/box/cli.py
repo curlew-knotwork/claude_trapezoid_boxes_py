@@ -79,7 +79,7 @@ def _defaults() -> dict:
         "tolerance": DEFAULT_TOLERANCE_MM, "corner_radius": None, "finger_width": None,
         "sheet_width": DEFAULT_SHEET_WIDTH_MM, "sheet_height": DEFAULT_SHEET_HEIGHT_MM,
         "labels": True, "dim_mode": DimMode.OUTER, "colorblind": False,
-        "json_errors": False, "output": "trapezoid_box_output.svg",
+        "json_errors": False, "output": "trapezoid_boxes_output.svg",
         "display_stroke_mm": 0.0,
     }
 

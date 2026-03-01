@@ -1,5 +1,5 @@
 """
-constants.py — ALL named constants for trapezoid_box v2.0.
+constants.py — ALL named constants for trapezoid_boxes v2.0.
 No other file introduces naked numbers.
 """
 

@@ -1,4 +1,4 @@
-# trapezoid_box — Failure Report
+# trapezoid_boxes — Failure Report
 
 | Timestamp (UTC) | Δ prev | Iterations to fix | Failure | Detail |
 |---|---|---|---|---|
