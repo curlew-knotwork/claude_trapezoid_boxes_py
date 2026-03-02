@@ -10,7 +10,7 @@
 | 4 | Design question deferred — implemented workaround instead | 4 | 0 | 4 | 1 | 2 |
 | 5 | Output presented without confirming it exercises changed code path | 3 | 0 | 3 | 0 | 1 |
 | 6 | Same bug class in multiple files (fixed in X, not propagated to Y) | 4 | 1 | 3 | 0 | 1 |
-| 7 | Requires Socratic prompting — user asks smell questions Claude should self-ask | 7 | 0 | 7 | 0 | 0 |
+| 7 | Requires Socratic prompting — user asks smell questions Claude should self-ask | 8 | 0 | 8 | 0 | 0 |
 | 8 | Verification gap — test passes but does not cover the thing that is wrong | 2 | 0 | 2 | 0 | 2 |
 | 9 | Skipped thinking-doing phase — doing-doing started without thinking-doing logged | 1 | 0 | 1 | 1 | 0 |
 | 10 | Pattern scan skipped — work unit presented/committed without running scan | 0 | 0 | 0 | 0 | 0 |
@@ -89,11 +89,14 @@ Gate types: **entry** (before writing any code), **exit** (before presenting/com
 
 ## Session Log
 
-| Date | Work done | Patterns | Notes |
-|------|-----------|----------|-------|
-| 2026-02-xx | Initial implementation | 1,2,3,4,5,6 | Counts established retroactively |
-| 2026-03-01 | Corner arc redesign sparring + impl | 1,3,4,6 | Sparring initiated by user |
-| 2026-03-01 | Complete redesign + gen_test_cut rewrite | 6,7 | Pattern 7 surfaced by user |
-| 2026-03-01 | Burn model boundary overrun found post-commit | 3,4,7,8 | radius=0 on walls; proofs passed; user caught visually after ~1 day |
-| 2026-03-01 | Agency protocol sparring + redesign | 9 | Sparring initiated by user; patterns #9, #10 added; agency protocols added |
-| 2026-03-01 | Wall joint complementarity + arc_BL propagation + proof 09 | 6,7,8 | #6 first surfaced by Claude (arc_BL not in instrument from prior fix); #7 user asked "do joints mate?"; #8 filled by proof 09 (35/35 pass) |
+CLAUDE.md ver = date of global CLAUDE.md at session start. Needed to slice Asymmetric Contribution ratio before/after rule changes. Record per session.
+
+| Date | CLAUDE.md ver | Work done | Patterns | Notes |
+|------|--------------|-----------|----------|-------|
+| 2026-02-xx | pre-2026-03-01 | Initial implementation | 1,2,3,4,5,6 | Counts established retroactively; ver unknown |
+| 2026-03-01 | pre-2026-03-01 | Corner arc redesign sparring + impl | 1,3,4,6 | Sparring initiated by user |
+| 2026-03-01 | pre-2026-03-01 | Complete redesign + gen_test_cut rewrite | 6,7 | Pattern 7 surfaced by user |
+| 2026-03-01 | pre-2026-03-01 | Burn model boundary overrun found post-commit | 3,4,7,8 | radius=0 on walls; proofs passed; user caught visually after ~1 day |
+| 2026-03-01 | pre-2026-03-01 | Agency protocol sparring + redesign | 9 | Sparring initiated by user; patterns #9, #10 added; agency protocols added |
+| 2026-03-01 | pre-2026-03-01 | Wall joint complementarity + arc_BL propagation + proof 09 | 6,7,8 | #6 first surfaced by Claude (arc_BL not in instrument from prior fix); #7 user asked "do joints mate?"; #8 filled by proof 09 (35/35 pass) |
+| 2026-03-02 | 2026-03-02 | CLAUDE.md audit vs external template; accuracy fixes | 7 | User prompted metrics design → version tagging insight (pattern #7: Socratic prompting) |

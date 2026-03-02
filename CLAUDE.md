@@ -25,7 +25,7 @@ Without a buffer ≥ 2*burn at zone end, the last tab exits the panel boundary.
 **Minimum corner radius for any finger edge: `corner_radius ≥ 2*burn`.**
 For 90° corners, tangent_dist = corner_radius. For non-90°: tangent_dist = r / tan(angle/2).
 - `radius=0` is forbidden on any panel with finger edges.
-- verify_or_abort must check: no outline coordinate exceeds nominal panel bounding box by > burn.
+- [GAP] verify_or_abort should check: no outline coordinate exceeds nominal panel bounding box by > burn. Currently only covered by proof 08.
 
 ## GEOMETRY RULES
 - Trapezoid corners: narrow-end = obtuse (90+leg_angle), wide-end = acute (90-leg_angle). Wrong assignment is silent.
@@ -33,7 +33,7 @@ For 90° corners, tangent_dist = corner_radius. For non-90°: tangent_dist = r /
 
 ## CORNER ARC MODEL
 Three distinct concepts:
-1. **BASE cut outline**: true trapezoid, four straight edges. Tiny safety chamfer (≤2mm, cut) optional.
+1. **BASE cut outline**: true trapezoid, four straight edges.
 2. **Finger zone boundary**: tangent_dist = R / tan(angle/2). Controls where tabs start/stop.
 3. **Corner arc etch**: non-cut mark on BASE only — makes zone boundary visible. Not on walls, not on lids.
 
@@ -41,13 +41,13 @@ Wall panels: plain rectangles, no arcs. Lid panels: plain shape, no arcs.
 WRONG: using arc radius to limit wall-to-wall finger zone. WRONG: cutting arcs into wall outlines.
 
 ## SVG OUTPUT RULES
-- stroke-width="0.1" (unitless). Never "0.001mm", never "0.3mm".
+- stroke-width="0.001" (laser hairline, unitless — SVG user units = mm). Never suffix with mm. display_stroke_mm > 0 overrides for human-viewable output.
 - Every generator runs verify_or_abort() before writing:
   - All coordinates finite and within sheet bounds
-  - No outline coordinate exceeds nominal panel bounding box by > burn
-  - All paths end with Z
+  - All paths end with Z (guaranteed by ClosedPath constructor + serialiser; not rechecked)
   - No bounding box overlaps
-  - Soundhole corner angles within 0.1° of expected
+  - [GAP] No outline coordinate exceeds nominal panel bounding box by > burn — math verified by proof 08; runtime check not in verify_or_abort
+  - [GAP] Soundhole corner angles — checked in instrument/soundhole.py at generation time, not in verify_or_abort
 - Fail → print errors, do not write, do not present.
 
 ## WHAT NOT TO DO
