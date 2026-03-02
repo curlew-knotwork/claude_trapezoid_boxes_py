@@ -1675,11 +1675,13 @@ One M command only; Z closes. Arc has two equal radii (circular), x-rotation alw
 ### 15.4 Stroke and Colour Conventions
 | Purpose | stroke-width | Default colour | Colorblind mode |
 |---|---|---|---|
-| Cut lines (through-cut) | 0.1 (unitless) | rgb(255,0,0) solid | rgb(0,0,0) solid |
-| Score lines (non-cut) | 0.1 (unitless) | rgb(0,0,255) dashed | rgb(0,0,0) dashed |
+| Cut lines (through-cut) | 0.001 (unitless) | rgb(255,0,0) solid | rgb(0,0,0) solid |
+| Score/etch lines (non-cut) | 0.1 (unitless) | rgb(0,0,0) dashed | rgb(0,0,0) dashed |
 | Labels and marks | 0.2mm | rgb(0,0,0) | rgb(0,0,0) |
 
-stroke-width MUST be unitless "0.1" — never "0.001mm" or "0.3mm". Unitless scales with the viewBox: visible on screen at any zoom, true hairline at laser cutter DPI.
+[UNRESOLVED — calibration test required, see §15.8] Cut line stroke-width: code uses SVG_HAIRLINE_MM=0.001; prior spec said 0.1. Do not change either value until proofs/00_corel_calibration.svg confirms Epilog Fusion M2 behaviour via CorelDRAW.
+
+Score/etch colour changed from rgb(0,0,255) to rgb(0,0,0): required for CorelDRAW Red/Black toolpath routing (§15.8). Implemented in SVG_SCORE_COLOUR.
 
 In colorblind mode, cut vs score is distinguished by dash pattern only. Score: stroke-dasharray="5.0000 2.0000".
 
@@ -1730,6 +1732,33 @@ The SVG writer does NOT read panel.finger_edges for path generation. Finger path
 
 ### 15.7 extract_config()
 extract_config(svg_path: Path) -&gt; str — opens SVG, parses with xml.etree.ElementTree, returns text of &lt;trapezoidbox:config&gt; CDATA block. Raises ValueError if not a trapezoidbox SVG or metadata absent.
+
+### 15.8 CAM Pipeline and CorelDRAW Routing
+
+Production pipeline: Python → SVG → CorelDRAW (CAM layer) → Epilog Fusion M2 75W CO2.
+
+CorelDRAW reads SVG stroke properties only. It does not interpret geometric semantics. SVG output must be pre-formatted to survive import without path-by-path manual correction — a manual step at the CAM layer is a structural vulnerability.
+
+#### Toolpath Routing Rules
+
+| Operation | stroke colour | stroke-width | Epilog profile |
+|---|---|---|---|
+| Vector cut (through-stock) | #FF0000 (Red) | 0.001 | Vector Cut |
+| Raster etch (corner arcs, surface marks) | #000000 (Black) | 0.1 | Raster Engrave |
+
+Enforced by `SVG_CUT_COLOUR = (255, 0, 0)` and `SVG_SCORE_COLOUR = (0, 0, 0)` in `constants.py`.
+
+#### Batch Correction Fallback
+
+If CorelDRAW does not auto-assign hairline on import: operator selects all Red paths (Select by Color → Red) and sets stroke to Hairline. Red/Black separation makes this a deterministic batch operation, not a path-by-path task.
+
+#### Calibration Test (PENDING — blocker before first production cut)
+
+`00_corel_calibration.svg` — lines at varying stroke widths (0.001, 0.01, 0.1) and colours (Red, Black, Blue). Confirms which stroke properties CorelDRAW auto-classifies as vector cut vs raster engrave on import. Resolves the stroke-width discrepancy flagged in §15.4.
+
+#### Pipeline Scope
+
+This routing scheme is specific to the CorelDRAW/Epilog Fusion M2 toolchain. Users with Inkscape, LightBurn, or direct SVG-to-hardware pipelines are not constrained to these colour values.
 
 ## 16. Box Mode (box/)
 ### 16.1 Panels Generated

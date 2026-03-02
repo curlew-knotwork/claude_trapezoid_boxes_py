@@ -35,7 +35,7 @@ DEFAULT_HINGE_DIAMETER_MM   = 6.0
 HINGE_SPACING_MM            = 80.0
 
 SVG_CUT_COLOUR              = (255, 0, 0)
-SVG_SCORE_COLOUR            = (0, 0, 255)
+SVG_SCORE_COLOUR            = (0, 0, 0)    # Black — CorelDRAW routes Black→raster, Red→vector cut
 SVG_LABEL_COLOUR            = (0, 0, 0)
 SVG_CB_CUT_COLOUR           = (0, 0, 0)
 SVG_CB_SCORE_COLOUR         = (0, 0, 0)

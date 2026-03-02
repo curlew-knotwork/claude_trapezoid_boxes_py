@@ -50,6 +50,21 @@ WRONG: using arc radius to limit wall-to-wall finger zone. WRONG: cutting arcs i
   - [GAP] Soundhole corner angles — checked in instrument/soundhole.py at generation time, not in verify_or_abort
 - Fail → print errors, do not write, do not present.
 
+## CAM PIPELINE (CorelDRAW → Epilog Fusion M2)
+Pipeline: Python → SVG → CorelDRAW (routes toolpaths by stroke properties) → Epilog Fusion M2 75W CO2.
+
+CorelDRAW reads stroke only. SVG must survive import without manual path-by-path correction.
+
+Mandatory colour routing (enforced by constants.py):
+- Vector cut (through-stock): `stroke="#FF0000"` (Red), `stroke-width="0.001"`
+- Raster etch (corner arcs, surface marks): `stroke="#000000"` (Black), `stroke-width="0.1"`
+
+Failsafe: if CorelDRAW doesn't auto-assign hairline on import → "Select by Color" → Select All Red → Set to Hairline.
+
+[UNRESOLVED] Calibration test required before first production cut: `00_corel_calibration.svg`.
+
+Pipeline scope: specific to owner's CorelDRAW/Epilog toolchain. Other users not constrained to these values.
+
 ## WHAT NOT TO DO
 - Use ratio-based corner radii.
 - Use mm-suffixed stroke-width on cut lines.
