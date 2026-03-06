@@ -1,72 +1,31 @@
 # PROJECT: TRAPEZOID_BOX
 
 ## REFERENCES
-- Spec:     docs/SPECIFICATION.md
-- Process:  docs/ENGINEERING_PROCESS.md  ← mantras, sparring protocol, anti-patterns
-- Proofs:   proofs/  (run before claiming correctness)
-- Patterns: docs/FAILURE_PATTERNS.md     ← read at session start
-- Style:    PEP8, strict typing, ruff + mypy clean
+- Spec:   docs/SPECIFICATION.md
+- Proofs: proofs/  (run before claiming correctness)
+- Style:  PEP8, strict typing, ruff + mypy clean
 
-## BURN MODEL
-SVG paths are laser centerlines. Laser removes `burn` mm from each side of every cut.
-- drawn_tab  = fw + 2*burn   → physical_tab  = fw
-- drawn_slot = fw - 2*burn + 2*tol  → physical_slot ≈ fw + 2*tol
-- depth      = T + burn
-- nominal_fit = drawn_slot - drawn_tab = -4*burn + 2*tol
-- DEFAULT: burn=0.05, tol=0.0 → fit=-0.2mm (rubber mallet)
-- WRONG: tab=fw-tol, gap=fw+tol (clearance not interference)
-- WRONG: tab=fw, gap=fw (laser widens gap, narrows tab → +4*burn floppy)
-- WRONG: burn=0.1, tol=0.1 (double-counts kerf, looks right but isn't)
+## USER
+Senior engineer. Terse. No summaries after file links. No "great question".
 
-## BURN MODEL BOUNDARY RULE
-tab_width = fw + 2*burn > fw. For n tabs in a zone of length n*fw: drawn overrun = 2*burn.
-Without a buffer ≥ 2*burn at zone end, the last tab exits the panel boundary.
-
-**Minimum corner radius for any finger edge: `corner_radius ≥ 2*burn`.**
-For 90° corners, tangent_dist = corner_radius. For non-90°: tangent_dist = r / tan(angle/2).
-- `radius=0` is forbidden on any panel with finger edges.
-- [GAP] verify_or_abort should check: no outline coordinate exceeds nominal panel bounding box by > burn. Currently only covered by proof 08.
-
-## GEOMETRY RULES
-- Trapezoid corners: narrow-end = obtuse (90+leg_angle), wide-end = acute (90-leg_angle). Wrong assignment is silent.
-- Corner radius: fixed mm, NEVER ratio. Ratio fails at steep leg angles.
-
-## CORNER ARC MODEL
-Three distinct concepts:
-1. **BASE cut outline**: true trapezoid, four straight edges.
-2. **Finger zone boundary**: tangent_dist = R / tan(angle/2). Controls where tabs start/stop.
-3. **Corner arc etch**: non-cut mark on BASE only — makes zone boundary visible. Not on walls, not on lids.
-
-Wall panels: plain rectangles, no arcs. Lid panels: plain shape, no arcs.
-WRONG: using arc radius to limit wall-to-wall finger zone. WRONG: cutting arcs into wall outlines.
+## INVARIANTS
+- Units: track throughout. Physics/geometry requires dimensional sanity check.
+- Unknowns: if any API/constant is uncertain, say so before using it.
+- Trapezoid corner angles: narrow-end = obtuse (90+leg_angle), wide-end = acute (90-leg_angle). Wrong assignment produces invalid geometry silently.
+- Corner radius: fixed mm, never a ratio. Ratio-based radius fails visually at steep leg angles.
 
 ## SVG OUTPUT RULES
-- stroke-width="0.001" (laser hairline, unitless — SVG user units = mm). Never suffix with mm. display_stroke_mm > 0 overrides for human-viewable output.
-- Every generator runs verify_or_abort() before writing:
+- stroke-width="0.1" (unitless). Never "0.001mm". Never "0.3mm". Unitless is visible on screen AND hairline at laser DPI.
+- Every SVG generator must run verify_or_abort() before writing the file:
   - All coordinates finite and within sheet bounds
-  - All paths end with Z (guaranteed by ClosedPath constructor + serialiser; not rechecked)
+  - All paths end with Z
   - No bounding box overlaps
-  - [GAP] No outline coordinate exceeds nominal panel bounding box by > burn — math verified by proof 08; runtime check not in verify_or_abort
-  - [GAP] Soundhole corner angles — checked in instrument/soundhole.py at generation time, not in verify_or_abort
-- Fail → print errors, do not write, do not present.
-
-## CAM PIPELINE (CorelDRAW → Epilog Fusion M2)
-Pipeline: Python → SVG → CorelDRAW (routes toolpaths by stroke properties) → Epilog Fusion M2 75W CO2.
-
-CorelDRAW reads stroke only. SVG must survive import without manual path-by-path correction.
-
-Mandatory colour routing (enforced by constants.py):
-- Vector cut (through-stock): `stroke="#FF0000"` (Red), `stroke-width="0.001"`
-- Raster etch (corner arcs, surface marks): `stroke="#000000"` (Black), `stroke-width="0.1"`
-
-Failsafe: if CorelDRAW doesn't auto-assign hairline on import → "Select by Color" → Select All Red → Set to Hairline.
-
-[UNRESOLVED] Calibration test required before first production cut: `00_corel_calibration.svg`.
-
-Pipeline scope: specific to owner's CorelDRAW/Epilog toolchain. Other users not constrained to these values.
+  - Soundhole corner angles within 0.1° of expected
+- If verification fails: print errors, do not write file, do not present output.
+- Never present an SVG that has not passed verification.
 
 ## WHAT NOT TO DO
-- Use ratio-based corner radii.
-- Use mm-suffixed stroke-width on cut lines.
-- Set `corner_radius < 2*burn` on any panel with finger edges.
-- Present an SVG that has not passed verification.
+- Do not present output and wait for the user to find the bug.
+- Do not re-derive known invariants from scratch — check the spec first.
+- Do not use ratio-based corner radii.
+- Do not use mm-suffixed stroke-width on cut lines.
