@@ -15,7 +15,7 @@ from constants import (
     TOOL_VERSION, SVG_TRAPEZOIDBOX_NS,
     SVG_CUT_COLOUR, SVG_SCORE_COLOUR, SVG_LABEL_COLOUR,
     SVG_CB_CUT_COLOUR, SVG_CB_SCORE_COLOUR,
-    SVG_HAIRLINE_MM, SVG_LABEL_STROKE_MM,
+    SVG_HAIRLINE_MM, SVG_SCORE_STROKE_MM, SVG_LABEL_STROKE_MM,
     SVG_SCORE_DASH_MM, SVG_SCORE_GAP_MM,
     SVG_COORD_DECIMAL_PLACES, SVG_LABEL_FONT_MM, SVG_ASSEMBLY_NUM_FONT_MM,
     PANEL_GAP_MM,
@@ -144,7 +144,7 @@ def _render_panel(panel: Panel, origin: Point, config: CommonConfig) -> str:
             f'A {_f(arc.radius)} {_f(arc.radius)} 0 {la} {sw} '
             f'{tx(arc.end.x)} {ty(arc.end.y)}" '
             f'stroke="{score_colour}" fill="none" '
-            f'stroke-width="{_f(SVG_HAIRLINE_MM)}" {score_dash_attr}/>'
+            f'stroke-width="{_f(SVG_SCORE_STROKE_MM)}" {score_dash_attr}/>'
         )
 
     # Score lines
@@ -152,7 +152,7 @@ def _render_panel(panel: Panel, origin: Point, config: CommonConfig) -> str:
         out.append(
             f'<line x1="{tx(sl.start.x)}" y1="{ty(sl.start.y)}" '
             f'x2="{tx(sl.end.x)}" y2="{ty(sl.end.y)}" '
-            f'stroke="{score_colour}" stroke-width="{_f(SVG_HAIRLINE_MM)}" '
+            f'stroke="{score_colour}" stroke-width="{_f(SVG_SCORE_STROKE_MM)}" '
             f'{score_dash_attr}/>'
         )
 

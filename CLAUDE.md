@@ -15,7 +15,9 @@ Senior engineer. Terse. No summaries after file links. No "great question".
 - Corner radius: fixed mm, never a ratio. Ratio-based radius fails visually at steep leg angles.
 
 ## SVG OUTPUT RULES
-- stroke-width="0.1" (unitless). Never "0.001mm". Never "0.3mm". Unitless is visible on screen AND hairline at laser DPI.
+- Cut lines: stroke-width="0.1" (unitless). Score/etch lines: stroke-width="0.3" (unitless).
+- Routing is by stroke-width only (Epilog Fusion M2): ≤0.1 → vector cut; ≥0.3 → raster etch. Color is human convention, not machine routing.
+- Never use mm-suffixed stroke-width. Never use 0.001 (invisible on screen).
 - Every SVG generator must run verify_or_abort() before writing the file:
   - All coordinates finite and within sheet bounds
   - All paths end with Z

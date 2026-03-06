@@ -35,11 +35,12 @@ DEFAULT_HINGE_DIAMETER_MM   = 6.0
 HINGE_SPACING_MM            = 80.0
 
 SVG_CUT_COLOUR              = (255, 0, 0)
-SVG_SCORE_COLOUR            = (0, 0, 0)    # Black — CorelDRAW routes Black→raster, Red→vector cut
+SVG_SCORE_COLOUR            = (0, 0, 0)    # Black — human convention only; routing is by stroke-width
 SVG_LABEL_COLOUR            = (0, 0, 0)
 SVG_CB_CUT_COLOUR           = (0, 0, 0)
 SVG_CB_SCORE_COLOUR         = (0, 0, 0)
-SVG_HAIRLINE_MM             = 0.001
+SVG_HAIRLINE_MM             = 0.1          # ≤0.1 → vector cut (Epilog Fusion M2, confirmed 2026-03-05)
+SVG_SCORE_STROKE_MM         = 0.3          # ≥0.3 → raster etch (Epilog Fusion M2, confirmed 2026-03-05)
 SVG_DISPLAY_STROKE_MM       = 0.0
 SVG_LABEL_STROKE_MM         = 0.2
 SVG_SCORE_DASH_MM           = 5.0
