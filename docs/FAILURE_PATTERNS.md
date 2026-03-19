@@ -14,8 +14,10 @@
 | 8 | Verification gap — test passes but does not cover the thing that is wrong | 2 | 0 | 2 | 0 | 2 |
 | 9 | Skipped thinking-doing phase — doing-doing started without thinking-doing logged | 1 | 0 | 1 | 1 | 0 |
 | 10 | Pattern scan skipped — work unit presented/committed without running scan | 0 | 0 | 0 | 0 | 0 |
+| 11 | Soft failure masking hard assembly requirement — generator degrades gracefully when it should fail hard | 0 | 0 | 0 | 0 | 0 |
 
 **Totals (2026-03-01):** 33 occurrences. Surfaced by Claude: 1. By user: 32. Sparring: 3. Arch fixes: 10.
+_(Pattern #11 added 2026-03-19, count starts at 0; imported from EXT_lasercutter_simple_frame_loom.md EXT-001)_
 
 Target: surfaced-by-Claude grows. Surfaced-by-user shrinks. #7 rate=0 when Claude self-asks first. #8 rate=0 when defect found → test written before fix. #9 rate=0 when thinking-doing steps logged before any code. #10 is the enforcement mechanism for all others.
 
@@ -31,6 +33,7 @@ Target: surfaced-by-Claude grows. Surfaced-by-user shrinks. #7 rate=0 when Claud
 8. **Verification gap** — tests coupled to production code but assert the wrong things. Ex: proofs 01-07 pass; no proof checks path coords stay within panel bounds.
 9. **Skipped thinking-doing phase** — task received → code written; no root cause named, no design question surfaced, no thinking-doing steps stated first.
 10. **Pattern scan skipped** — work unit presented or committed without running #1–#9 scan. Meta-pattern: enforcement mechanism for all others.
+11. **Soft failure masking hard requirement** — a generator or function degrades gracefully (returns empty geometry, zero-depth slots, count=0 joints) with at most a warning, when the correct behaviour is a hard error. The output is geometrically valid (passes coordinate and path checks) but functionally unassembleable. `verify_or_abort()` catches out-of-bounds and unclosed paths but does not catch absent or zero-depth functional geometry. Source: `docs/EXT_lasercutter_simple_frame_loom.md` EXT-001.
 
 ## Agency Protocols
 
@@ -80,6 +83,11 @@ Gate types: **entry** (before writing any code), **exit** (before presenting/com
 - Gate: Before any code: state (a) root cause vs symptom, (b) thinking-doing steps needed, (c) any design question worth surfacing.
 - Trigger: "I received a task and am about to start doing-doing without logging a thinking-doing step. Raising."
 - Evidence: thinking-doing steps stated in transcript before first code written.
+
+**#11 — Soft failure masking hard requirement** [exit]
+- Gate: "Does any generator or function return empty/zero geometry instead of raising? If `verify_or_abort()` would pass but the piece is unassembleable, it should have failed earlier."
+- Trigger: "I'm writing or reviewing a generator. It has a degraded-output path (count=0, depth=0, empty list) that does not raise. Raising."
+- Evidence: every degraded-output path either raises or is explicitly validated downstream before the SVG is written.
 
 **#10 — Pattern scan skipped** [exit + daily]
 - Gate (exit): Before presenting/committing: run scan #1–#9, log each yes/no. Surface any yes before proceeding.

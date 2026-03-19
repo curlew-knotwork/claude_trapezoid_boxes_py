@@ -12,6 +12,7 @@ Entries are append-only. If the source project revises a lesson, add a REVISION 
 Imported: 2026-03-19
 Source: `lasercutter-simple-frame-loom / FAILURE_PATTERN_REGISTRY.md` (category G / pattern P-G, context: wall-to-wall joint generation)
 Status: **UNVERIFIED-HERE** (source pattern is from code analysis, not a physical test — credible regardless of machine)
+Adopted: added to this project as pattern #11 in `docs/FAILURE_PATTERNS.md` (2026-03-19, count starts at 0)
 
 Summary: `make_finger_edge()` returned `count=0` (plain edge, no joints) with only `warnings.warn` when corner radius left insufficient room for joints. The box was geometrically valid SVG but structurally unassembleable. No hard error was raised; the soft failure was silent to the caller and to any proof checking the SVG for validity.
 
