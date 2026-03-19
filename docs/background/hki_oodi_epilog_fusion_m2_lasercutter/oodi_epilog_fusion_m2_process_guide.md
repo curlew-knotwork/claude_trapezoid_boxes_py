@@ -40,14 +40,34 @@ Implication for SVG authoring:
 - Use stroke-width=0.3 for etch lines (safely above 0.1, below 0.5 — will cut, not etch).
   **TODO**: re-test stroke-width=0.3 explicitly; current etch standard may need to move to 0.5.
 
-## 4. Known issues
+## 4. Kerf calibration (finger joints, 3mm plywood)
+
+File: `testrun_inputs/02_kerf_calibration.svg` (70×20mm)
+
+**What it tests:** 5 slot pieces (slot widths 2.0, 2.4, 2.8, 3.2, 3.6mm) vs 1 tab piece (tab width 3.0mm, depth 3.0mm). All cuts are red, stroke-width=0.1.
+
+**How to run:**
+1. Cut `02_kerf_calibration.svg` — vector cut only, no raster.
+2. Insert the tab piece into each slot. Note the tightest slot that still assembles without forcing.
+3. Record the winning slot width — this is the kerf-compensated slot dimension to use in the box generator for this laser + 3mm plywood.
+4. Optionally: measure actual tab and slot widths with calipers to compute actual kerf per side.
+
+**Background:** Run01 (28 Feb 2026) produced very loose joints. Slot widths are biased well below nominal (3.0mm) to compensate for the laser kerf removing material on both sides of the cut line. Tab depth is set to 3.0mm = material thickness (run01 also had tabs that were too short).
+
+**Results to record here after testing:**
+- Winning slot width: _TBD_
+- Measured tab width (actual): _TBD_
+- Measured slot widths (actual): _TBD_
+- Computed kerf per side: _TBD_
+
+## 5. Known issues
 The max thickness that can be cut is 6mm plywood.
 The Laser Cutter is in near constant operation 10 am - 8 pm except Monday mornings (routine maintenance) and public holidays.
 Over time, the smoke coats the lens making laser cutting of 6 mm plywood less effective.
 It can be helpful to make 6mm drawings such that they can be flipped around axis of symmetry to cut from front and back,
 when possible. Many drawings might have no symmetry, burning them twice may help (but their burnt surface is very charred afterwards).
 
-## 4. Process
+## 6. Process
 
 1. Follow the user guide https://www.dropbox.com/scl/fi/n4ppp7l4jd3a7j0d34abi/Laserleikkuri_ENG_v5.pdf
 
@@ -63,9 +83,6 @@ when possible. Many drawings might have no symmetry, burning them twice may help
    3.3. Import your SVG. Place it on the drawing where appropriate for it to be burned/etched on the sheet
      (e.g. fresh plywood sheet vs. previous used one)
      - Visually check the drawing, especially that the overall dimensions are correct.
-
-
-
        How to handle anything wrong is not handled here: (RCA + correction)
    3.4. Press "Print"
         3.5.2. Print style is preset to "CorelDraw" defaults. Leave as is
