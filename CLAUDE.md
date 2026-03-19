@@ -4,6 +4,7 @@
 - Spec:   docs/SPECIFICATION.md
 - Proofs: proofs/  (run before claiming correctness)
 - Style:  PEP8, strict typing, ruff + mypy clean
+- External lessons: docs/EXT_*.md — check Status before acting on any entry (SUSPECT-CIRCULAR and STALE require re-verification)
 
 ## USER
 Senior engineer. Terse. No summaries after file links. No "great question".

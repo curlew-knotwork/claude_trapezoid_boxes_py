@@ -54,6 +54,40 @@ How: state the design question → present analysis → reach agreement → upda
 
 ---
 
+## External Lessons
+
+Lessons imported from other projects live in `docs/EXT_<project-slug>.md`. They are kept separate from this project's `FAILURE_PATTERNS.md` and `FAILURE_REPORT.md` to avoid cross-contaminating occurrence statistics.
+
+### Entry format (per lesson)
+
+Each entry must record:
+- **Imported date** — when it was brought into this project
+- **Source** — repo URL + file path within that repo
+- **Status** — one of: `UNVERIFIED-HERE`, `VERIFIED-HERE`, `SUSPECT-CIRCULAR`, `STALE`, `REVISED`
+- **Summary** — what the lesson is and why it is relevant here
+- **Staleness note** — what event in the source project would require re-checking this entry
+
+Entries are append-only. If the source project revises a lesson, add a REVISION note below the original — never overwrite.
+
+### Status meanings
+
+| Status | Meaning |
+|---|---|
+| `UNVERIFIED-HERE` | Source is credible but this project has not confirmed it yet |
+| `VERIFIED-HERE` | This project has independently confirmed the lesson |
+| `SUSPECT-CIRCULAR` | The lesson may have originated from this project — not independent |
+| `STALE` | Source project has moved on; entry needs review |
+| `REVISED` | Source project changed its position; see REVISION note |
+
+### Rules
+
+- Before acting on an external lesson: check its Status. `SUSPECT-CIRCULAR` and `STALE` require re-verification before use.
+- If a lesson influences a design decision or parameter (e.g. kerf value), cite the EXT entry in that decision document.
+- At session start: scan EXT files for any entry whose staleness condition may have been triggered since last session.
+- When this project's findings could correct or confirm an external lesson, note it in the EXT entry and consider whether to feed it back to the source project.
+
+---
+
 ## Anti-patterns
 
 - Jumping to code before spec, test, and design are settled
