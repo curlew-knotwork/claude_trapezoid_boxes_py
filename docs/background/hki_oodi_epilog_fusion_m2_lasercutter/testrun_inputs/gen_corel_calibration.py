@@ -33,10 +33,10 @@ COLOURS = [
     ("#000000", "Bk"),
     ("#0000FF", "Bu"),
 ]
-WIDTHS = [0.001, 0.005, 0.025, 0.1, 0.5]
+WIDTHS = [0.001, 0.005, 0.025, 0.1, 0.2, 0.3, 0.5]
 
 PAGE_W = 16.0   # mm
-PAGE_H = 15.0   # mm
+PAGE_H = 19.0   # mm
 
 MARGIN      = 0.5
 LABEL_COL_W = 4.5   # x-width reserved for width label (e.g. "0.025")

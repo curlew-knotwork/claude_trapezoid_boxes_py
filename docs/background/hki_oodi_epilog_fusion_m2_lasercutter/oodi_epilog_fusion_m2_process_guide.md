@@ -28,7 +28,19 @@ Turn Laser Cutter and library's dedicated cable-attached PC on.
 Turn Air Conditioning to max for 1-4 hours.
 Turn Laser Cutter's air blower on during cutting to vent smoke outdoors.
 
-## 3. Known issues
+## 3. Confirmed SVG routing behaviour (Epilog Fusion M2 via CorelDRAW)
+
+Tested with `00_corel_calibration.svg` (2026-03-19):
+- stroke-width 0.001–0.1mm → **vector cut** (colour irrelevant)
+- stroke-width 0.5mm → **raster etch** (colour irrelevant)
+- Routing is determined by stroke-width alone; colour has no effect on this machine/driver combo.
+
+Implication for SVG authoring:
+- Use stroke-width=0.1 for cut lines (confirmed hairline threshold).
+- Use stroke-width=0.3 for etch lines (safely above 0.1, below 0.5 — will cut, not etch).
+  **TODO**: re-test stroke-width=0.3 explicitly; current etch standard may need to move to 0.5.
+
+## 4. Known issues
 The max thickness that can be cut is 6mm plywood.
 The Laser Cutter is in near constant operation 10 am - 8 pm except Monday mornings (routine maintenance) and public holidays.
 Over time, the smoke coats the lens making laser cutting of 6 mm plywood less effective.
@@ -51,6 +63,9 @@ when possible. Many drawings might have no symmetry, burning them twice may help
    3.3. Import your SVG. Place it on the drawing where appropriate for it to be burned/etched on the sheet
      (e.g. fresh plywood sheet vs. previous used one)
      - Visually check the drawing, especially that the overall dimensions are correct.
+
+
+
        How to handle anything wrong is not handled here: (RCA + correction)
    3.4. Press "Print"
         3.5.2. Print style is preset to "CorelDraw" defaults. Leave as is
