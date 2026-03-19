@@ -54,6 +54,11 @@ File: `testrun_inputs/02_kerf_calibration.svg` (70×20mm)
 
 **Background:** Run01 (28 Feb 2026) produced very loose joints. Slot widths are biased well below nominal (3.0mm) to compensate for the laser kerf removing material on both sides of the cut line. Tab depth is set to 3.0mm = material thickness (run01 also had tabs that were too short).
 
+**Prior from sibling project (lasercutter-simple-frame-loom, same user, likely same machine):**
+kerf=0.15mm per side → total gap on a nominal-3mm joint = 4×0.15=0.60mm → expect winning slot ≈ 2.4mm.
+Unverified: loom CLAUDE.md states kerf=0.15 but does not name the machine. Treat as a strong prior, not a fact.
+Note: this project's FAILURE_REPORT recorded burn=0.05mm which produced floppy joints in physical test cuts — 0.15mm is more consistent with run01 observations.
+
 **Results to record here after testing:**
 - Winning slot width: _TBD_
 - Measured tab width (actual): _TBD_
